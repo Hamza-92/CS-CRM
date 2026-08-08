@@ -1,9 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Bell,
-    Boxes,
-    History,
-    LayoutDashboard,
     PanelLeftClose,
     PanelLeftOpen,
     Search,
@@ -36,34 +33,9 @@ interface NavGroup {
 
 const groups: NavGroup[] = [
     {
-        label: 'Overview',
-        items: [
-            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
-        ],
-    },
-    {
-        label: 'Catalogue',
-        items: [
-            {
-                label: 'Products',
-                href: '/products',
-                icon: Boxes,
-                ability: 'products.view',
-                match: (p) => p.startsWith('/products') || p.startsWith('/plans'),
-            },
-        ],
-    },
-    {
         label: 'Administration',
         items: [
             { label: 'Users', href: '/users', icon: Users, ability: 'users.view', match: (p) => p.startsWith('/users') },
-            {
-                label: 'Activity log',
-                href: '/activity',
-                icon: History,
-                ability: 'activity_log.view',
-                match: (p) => p.startsWith('/activity'),
-            },
         ],
     },
 ];
@@ -89,11 +61,11 @@ function Rail({
         <div className="flex h-full flex-col border-r border-rail-line bg-rail">
             <div
                 className={cn(
-                    'flex h-14 shrink-0 items-center border-b border-rail-line',
-                    collapsed ? 'justify-center px-2' : 'px-4',
+                    'flex h-16 shrink-0 items-center border-b border-rail-line',
+                    collapsed ? 'justify-center px-2' : 'px-5',
                 )}
             >
-                <Link href="/dashboard" aria-label={appName}>
+                <Link href="/users" aria-label={appName}>
                     {collapsed ? <WordmarkBadge name={appName} /> : <Wordmark name={appName} size="md" />}
                 </Link>
             </div>
@@ -101,7 +73,7 @@ function Rail({
             <nav
                 className={cn(
                     'flex-1 py-3',
-                    collapsed ? 'space-y-2 overflow-y-visible px-2' : 'space-y-5 overflow-y-auto px-2.5',
+                    collapsed ? 'space-y-2 overflow-y-visible px-2' : 'space-y-6 overflow-y-auto px-3',
                 )}
             >
                 {visible.map((group) => (
@@ -119,9 +91,9 @@ function Rail({
                                         aria-current={active ? 'page' : undefined}
                                         className={cn(
                                             'group relative flex items-center rounded-md text-xs font-medium transition-colors duration-150',
-                                            collapsed ? 'justify-center p-2' : 'gap-2.5 px-2.5 py-1.5',
+                                            collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5',
                                             active
-                                                ? 'bg-brand-wash text-brand'
+                                                ? 'bg-brand-wash font-semibold text-brand'
                                                 : 'text-rail-ink-2 hover:bg-rail-2 hover:text-rail-ink',
                                         )}
                                     >
@@ -186,7 +158,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <aside
                 className={cn(
                     'fixed inset-y-0 left-0 z-30 hidden transition-[width] duration-200 lg:block',
-                    collapsed ? 'w-14' : 'w-56',
+                    collapsed ? 'w-16' : 'w-64',
                 )}
             >
                 <Rail path={path} collapsed={collapsed} />
@@ -214,8 +186,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </div>
             )}
 
-            <div className={cn('transition-[padding] duration-200', collapsed ? 'lg:pl-14' : 'lg:pl-56')}>
-                <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-surface/90 px-4 backdrop-blur-md sm:px-5">
+            <div className={cn('transition-[padding] duration-200', collapsed ? 'lg:pl-16' : 'lg:pl-64')}>
+                <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur-md sm:px-6">
                     <button
                         type="button"
                         onClick={() => setMobileOpen(true)}
@@ -241,7 +213,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         <input
                             type="search"
                             disabled
-                            placeholder="Search — available in Phase 2"
+                            placeholder="Global search coming next"
                             aria-label="Global search"
                             className="h-9 w-full cursor-not-allowed rounded-md border border-line bg-surface-2 pr-3 pl-8 text-xs text-ink placeholder:text-ink-3"
                         />
@@ -262,7 +234,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     <UserMenu />
                 </header>
 
-                <main className="px-4 py-5 sm:px-5 lg:px-6">
+                <main className="px-4 pt-4 pb-[50px] sm:px-6 lg:px-[50px]">
                     <div className="mx-auto max-w-[1600px]">
                         <Flash />
                         {children}

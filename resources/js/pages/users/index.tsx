@@ -1,8 +1,25 @@
 import { Head, router } from '@inertiajs/react';
-import { CalendarDays, Eye, KeyRound, Lock, LockOpen, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import {
+    CalendarDays,
+    AlertTriangle,
+    ChevronDown,
+    ChevronUp,
+    ChevronsUpDown,
+    Eye,
+    KeyRound,
+    Lock,
+    LockOpen,
+    List,
+    LayoutGrid,
+    Pencil,
+    Plus,
+    Search,
+    Trash2,
+    Users,
+} from 'lucide-react';
 import { useState } from 'react';
 import { EmptyState } from '@/components/empty-state';
-import { PageHeader, Toolbar } from '@/components/page-header';
+import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { ResetPasswordModal } from '@/components/users/reset-password-modal';
 import { UserModal } from '@/components/users/user-modal';
@@ -13,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/field';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useFilters } from '@/hooks/use-filters';
 import AppLayout from '@/layouts/app-layout';
@@ -23,7 +41,7 @@ import { cn } from '@/lib/utils';
 interface Props {
     users: Paginated<ManagedUser>;
     roles: RoleOption[];
-    filters: { search: string; status: string; role: string; sort: string; direction: 'asc' | 'desc' };
+    filters: { search: string; status: string; role: string; sort: string; direction: 'asc' | 'desc'; per_page: number };
     can: { create: boolean; manage: boolean };
 }
 
@@ -37,12 +55,16 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
         role: filters.role,
         sort: filters.sort,
         direction: filters.direction,
+        per_page: filters.per_page,
     });
 
     const [formOpen, setFormOpen] = useState(false);
     const [editing, setEditing] = useState<ManagedUser | null>(null);
     const [viewing, setViewing] = useState<ManagedUser | null>(null);
     const [resetting, setResetting] = useState<ManagedUser | null>(null);
+    const [confirmation, setConfirmation] = useState<{ user: ManagedUser; action: 'status' | 'delete' } | null>(null);
+    const [activeView, setActiveView] = useState<'list' | 'grid'>('list');
+    const hasFilters = Boolean(values.search || values.status || values.role);
 
     function openCreate() {
         setEditing(null);
@@ -55,16 +77,23 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
     }
 
     function toggleStatus(user: ManagedUser) {
-        const next = user.is_active ? 'Deactivate' : 'Activate';
-
-        if (confirm(`${next} ${user.name}?`)) {
-            router.patch(`/users/${user.id}/status`, {}, { preserveScroll: true });
-        }
+        setConfirmation({ user, action: 'status' });
     }
 
     function remove(user: ManagedUser) {
-        if (confirm(`Delete ${user.name}? Their activity history is kept.`)) {
-            router.delete(`/users/${user.id}`, { preserveScroll: true });
+        setConfirmation({ user, action: 'delete' });
+    }
+
+    function confirmAction() {
+        if (!confirmation) return;
+
+        const { user, action } = confirmation;
+        const options = { preserveScroll: true, onFinish: () => setConfirmation(null) };
+
+        if (action === 'delete') {
+            router.delete(`/users/${user.id}`, options);
+        } else {
+            router.patch(`/users/${user.id}/status`, {}, options);
         }
     }
 
@@ -78,14 +107,14 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                     setMany({ sort: column, direction: isSorted && filters.direction === 'asc' ? 'desc' : 'asc' })
                 }
                 className={cn(
-                    'eyebrow inline-flex items-center gap-1',
+                    'inline-flex items-center gap-1 text-xs font-semibold',
                     isSorted ? 'text-ink' : 'text-ink-3 hover:text-ink-2',
                 )}
             >
                 {label}
-                <span aria-hidden="true" className="text-[8px]">
-                    {isSorted ? (filters.direction === 'asc' ? '▲' : '▼') : '⇅'}
-                </span>
+                {isSorted ? (
+                    filters.direction === 'asc' ? <ChevronUp aria-hidden="true" className="size-4" /> : <ChevronDown aria-hidden="true" className="size-4" />
+                ) : <ChevronsUpDown aria-hidden="true" className="size-4 opacity-50" />}
             </button>
         );
     }
@@ -96,11 +125,6 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
 
             <PageHeader
                 title="Users"
-                badge={
-                    <Badge tone="neutral" size="sm">
-                        {users.total}
-                    </Badge>
-                }
                 actions={
                     can.create && (
                         <Button onClick={openCreate}>
@@ -111,8 +135,8 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                 }
             />
 
-            <Card>
-                <Toolbar>
+            <Card className="mb-4 p-4">
+                <div className="flex flex-wrap items-center gap-2">
                     <div className="relative w-full max-w-xs">
                         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
                         <Input
@@ -127,10 +151,7 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
 
                     <div className="w-44">
                         <SearchableSelect
-                            options={[
-                                { value: '', label: 'All roles' },
-                                ...roles.map((role) => ({ value: role.value, label: role.label })),
-                            ]}
+                            options={[{ value: '', label: 'All roles' }, ...roles.map((role) => ({ value: role.value, label: role.label }))]}
                             value={values.role ?? ''}
                             onChange={(value) => set('role', value)}
                             placeholder="All roles"
@@ -140,36 +161,56 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
 
                     <div className="w-36">
                         <SearchableSelect
-                            options={[
-                                { value: '', label: 'All statuses' },
-                                { value: 'active', label: 'Active' },
-                                { value: 'inactive', label: 'Inactive' },
-                            ]}
+                            options={[{ value: '', label: 'All statuses' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }]}
                             value={values.status ?? ''}
                             onChange={(value) => set('status', value)}
                             placeholder="All statuses"
                             searchPlaceholder="Search..."
                         />
                     </div>
-                </Toolbar>
+
+                    {hasFilters && (
+                        <button type="button" onClick={() => setMany({ search: '', role: '', status: '' })} className="text-xs font-medium text-brand hover:underline">
+                            Clear filters
+                        </button>
+                    )}
+
+                    <div className="ml-auto flex items-center gap-2">
+                        <div className="mr-2 flex rounded-md border border-line bg-surface p-0.5">
+                            <button type="button" aria-label="List view" onClick={() => setActiveView('list')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'list' ? 'bg-brand text-white' : 'text-ink-3 hover:bg-surface-3')}><List className="size-4" /></button>
+                            <button type="button" aria-label="Grid view" onClick={() => setActiveView('grid')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'grid' ? 'bg-brand text-white' : 'text-ink-3 hover:bg-surface-3')}><LayoutGrid className="size-4" /></button>
+                        </div>
+                    </div>
+                </div>
+
+            </Card>
+
+            {activeView === 'list' ? (
+            <Card>
 
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
-                        <thead className="bg-surface-2">
+                        <thead className="bg-[#F0F0F1]">
                             <tr className="border-b border-line">
-                                <th scope="col" className="eyebrow h-9 w-12 px-3.5 text-left text-ink-3">
+                                <th scope="col" className="h-10 w-12 px-3.5 text-left text-xs font-semibold text-ink-2">
                                     #
                                 </th>
                                 <th scope="col" className="h-9 px-3 text-left">
                                     {sortable('name', 'Name')}
                                 </th>
-                                <th scope="col" className="eyebrow h-9 px-3 text-left text-ink-3">
+                                <th scope="col" className="h-10 px-3 text-left text-xs font-semibold text-ink-2">
                                     Roles
+                                </th>
+                                <th scope="col" className="h-9 px-3 text-left">
+                                    {sortable('is_active', 'Status')}
+                                </th>
+                                <th scope="col" className="h-9 px-3 text-left">
+                                    {sortable('last_login_at', 'Last sign-in')}
                                 </th>
                                 <th scope="col" className="h-9 px-3 text-left">
                                     {sortable('created_at', 'Joined')}
                                 </th>
-                                <th scope="col" className="eyebrow h-9 px-3.5 text-right text-ink-3">
+                                <th scope="col" className="h-10 px-3.5 text-right text-xs font-semibold text-ink-2">
                                     Actions
                                 </th>
                             </tr>
@@ -177,7 +218,7 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                         <tbody>
                             {users.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-3.5 py-10">
+                                    <td colSpan={7} className="px-3.5 py-14">
                                         <EmptyState
                                             icon={Users}
                                             title="No users found"
@@ -191,14 +232,14 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                                         key={user.id}
                                         className="border-b border-line/70 transition-colors last:border-b-0 hover:bg-surface-2"
                                     >
-                                        <td className="num h-14 px-3.5 text-2xs text-ink-3">{(users.from ?? 1) + index}</td>
+                                        <td className="num h-[60px] px-3.5 text-xs font-medium text-ink-2">{(users.from ?? 1) + index}</td>
 
                                         <td className="px-3">
                                             <div className="flex items-center gap-2.5">
-                                                <Avatar name={user.name} size="lg" />
+                                                <Avatar name={user.name} size="lg" className="size-10" />
                                                 <div className="min-w-0">
-                                                    <p className="truncate text-xs font-semibold text-ink">{user.name}</p>
-                                                    <p className="truncate text-2xs text-ink-3">{user.email}</p>
+                                                    <p className="truncate text-xs font-medium text-ink">{user.name}</p>
+                                                    <p className="truncate text-xs text-ink-3">{user.email}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -215,6 +256,18 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                                                     <span className="text-2xs text-ink-3">None</span>
                                                 )}
                                             </div>
+                                        </td>
+
+                                        <td className="px-3">
+                                            <Badge tone={user.is_active ? 'ok' : 'neutral'} size="sm" dot>
+                                                {user.is_active ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </td>
+
+                                        <td className="px-3">
+                                            <span className="num text-2xs text-ink-2">
+                                                {user.last_login_at ? shortDate(user.last_login_at) : 'Never'}
+                                            </span>
                                         </td>
 
                                         <td className="px-3">
@@ -300,12 +353,89 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                     </table>
                 </div>
 
-                <Pagination meta={users} />
+                <Pagination meta={users} perPage={Number(values.per_page ?? 10)} onPerPageChange={(value) => set('per_page', value)} />
             </Card>
+            ) : (
+                <div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                        {users.data.map((user) => (
+                            <Card key={user.id} className="p-4 transition-shadow duration-200 hover:shadow-pop">
+                                <div className="flex items-center gap-3">
+                                    <Avatar name={user.name} size="lg" className="size-12 rounded-lg text-sm" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-xs font-semibold text-ink">{user.name}</p>
+                                        <p className="truncate text-2xs text-ink-3">{user.email}</p>
+                                    </div>
+                                    <Badge tone={user.is_active ? 'ok' : 'neutral'} size="sm" dot>
+                                        {user.is_active ? 'Active' : 'Inactive'}
+                                    </Badge>
+                                </div>
+
+                                <div className="my-3 border-t border-line" />
+
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-0.5">
+                                        <Tooltip label="View"><button type="button" onClick={() => setViewing(user)} className={cn(actionButton, 'text-brand hover:bg-brand-wash hover:text-brand')}><Eye /></button></Tooltip>
+                                        {can.manage && <>
+                                            <Tooltip label="Edit"><button type="button" onClick={() => openEdit(user)} className={cn(actionButton, 'text-warn hover:bg-warn-wash hover:text-warn')}><Pencil /></button></Tooltip>
+                                            <Tooltip label="Reset password"><button type="button" onClick={() => setResetting(user)} className={cn(actionButton, 'text-brand hover:bg-brand-wash hover:text-brand')}><KeyRound /></button></Tooltip>
+                                            <Tooltip label={user.is_active ? 'Deactivate' : 'Activate'}><button type="button" onClick={() => toggleStatus(user)} className={cn(actionButton, 'text-warn hover:bg-warn-wash hover:text-warn')}>{user.is_active ? <Lock /> : <LockOpen />}</button></Tooltip>
+                                            <Tooltip label="Delete"><button type="button" onClick={() => remove(user)} className={cn(actionButton, 'text-bad hover:bg-bad-wash hover:text-bad')}><Trash2 /></button></Tooltip>
+                                        </>}
+                                    </div>
+                                    {user.roles?.[0] ? (
+                                        <Badge tone="brand" size="md" className="capitalize">{user.roles[0].name.replace(/_/g, ' ')}</Badge>
+                                    ) : <Badge tone="neutral" size="md">No role</Badge>}
+                                </div>
+                            </Card>
+                        ))}
+
+                        {users.data.length === 0 && (
+                            <div className="col-span-full py-12"><EmptyState icon={Users} title="No users found" description="Try a different search or filter." /></div>
+                        )}
+                    </div>
+                    <Card className="mt-4"><Pagination meta={users} perPage={Number(values.per_page ?? 10)} onPerPageChange={(value) => set('per_page', value)} /></Card>
+                </div>
+            )}
 
             <UserModal open={formOpen} onClose={() => setFormOpen(false)} user={editing} roles={roles} />
             <ViewUserModal open={viewing !== null} onClose={() => setViewing(null)} user={viewing} />
             <ResetPasswordModal open={resetting !== null} onClose={() => setResetting(null)} user={resetting} />
+
+            <Modal
+                open={confirmation !== null}
+                onClose={() => setConfirmation(null)}
+                title={confirmation?.action === 'delete' ? 'Remove user' : `${confirmation?.user.is_active ? 'Deactivate' : 'Activate'} user`}
+                width="sm"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setConfirmation(null)}>Cancel</Button>
+                        <Button variant={confirmation?.action === 'delete' ? 'danger' : 'primary'} onClick={confirmAction}>
+                            {confirmation?.action === 'delete' ? 'Remove user' : 'Confirm change'}
+                        </Button>
+                    </>
+                }
+            >
+                <div className="flex gap-3">
+                    <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', confirmation?.action === 'delete' ? 'bg-bad-wash text-bad' : 'bg-brand-wash text-brand')}>
+                        <AlertTriangle className="size-4" />
+                    </span>
+                    <div>
+                        <p className="text-xs font-medium text-ink">
+                            {confirmation?.action === 'delete'
+                                ? `Remove ${confirmation.user.name} from the CRM?`
+                                : `${confirmation?.user.is_active ? 'Deactivate' : 'Activate'} ${confirmation?.user.name}?`}
+                        </p>
+                        <p className="mt-1 text-2xs leading-5 text-ink-2">
+                            {confirmation?.action === 'delete'
+                                ? 'They will lose access immediately. Their activity history will be retained for audit purposes.'
+                                : confirmation?.user.is_active
+                                  ? 'They will no longer be able to sign in until the account is reactivated.'
+                                  : 'They will regain access using their existing credentials.'}
+                        </p>
+                    </div>
+                </div>
+            </Modal>
         </AppLayout>
     );
 }

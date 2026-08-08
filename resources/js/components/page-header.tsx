@@ -10,16 +10,18 @@ export interface Crumb {
 export function PageHeader({
     title,
     badge,
+    description,
     breadcrumbs = [],
     actions,
 }: {
     title: string;
     badge?: ReactNode;
+    description?: string;
     breadcrumbs?: Crumb[];
     actions?: ReactNode;
 }) {
     return (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0">
                 {breadcrumbs.length > 0 && (
                     <nav aria-label="Breadcrumb" className="mb-1">
@@ -40,9 +42,10 @@ export function PageHeader({
                     </nav>
                 )}
                 <div className="flex items-center gap-2">
-                    <h1 className="truncate text-lg font-semibold tracking-tight text-ink">{title}</h1>
+                    <h1 className="truncate text-xl font-semibold text-ink">{title}</h1>
                     {badge}
                 </div>
+                {description && <p className="mt-1.5 max-w-2xl text-xs text-ink-2">{description}</p>}
             </div>
             {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>

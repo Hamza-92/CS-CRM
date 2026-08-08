@@ -1,5 +1,6 @@
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 export interface SelectOption {
@@ -34,12 +35,13 @@ export function SearchableSelect({
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [active, setActive] = useState(0);
-    const [dropUp, setDropUp] = useState(false);
+    const [position, setPosition] = useState<{ left: number; width: number; top?: number; bottom?: number } | null>(null);
 
     const rootRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
 
     const selected = options.find((option) => option.value === value);
 
@@ -61,22 +63,37 @@ export function SearchableSelect({
             return;
         }
 
-        const rect = triggerRef.current?.getBoundingClientRect();
-        setDropUp(Boolean(rect && window.innerHeight - rect.bottom < 280));
+        function updatePosition() {
+            const rect = triggerRef.current?.getBoundingClientRect();
+            if (!rect) return;
+
+            const shouldDropUp = window.innerHeight - rect.bottom < 280;
+            setPosition({
+                left: rect.left,
+                width: rect.width,
+                ...(shouldDropUp ? { bottom: window.innerHeight - rect.top + 6 } : { top: rect.bottom + 6 }),
+            });
+        }
+
+        updatePosition();
 
         const focusTimer = window.setTimeout(() => searchRef.current?.focus(), 10);
 
         function onPointerDown(event: MouseEvent) {
-            if (!rootRef.current?.contains(event.target as Node)) {
+            if (!rootRef.current?.contains(event.target as Node) && !menuRef.current?.contains(event.target as Node)) {
                 setOpen(false);
             }
         }
 
         document.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
 
         return () => {
             window.clearTimeout(focusTimer);
             document.removeEventListener('mousedown', onPointerDown);
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
         };
     }, [open]);
 
@@ -157,12 +174,11 @@ export function SearchableSelect({
                 <ChevronDown className={cn('size-3.5 shrink-0 text-ink-3 transition-transform', open && 'rotate-180')} />
             </button>
 
-            {open && (
+            {open && position && createPortal(
                 <div
-                    className={cn(
-                        'absolute z-50 w-full overflow-hidden rounded-lg border border-line bg-surface shadow-pop',
-                        dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5',
-                    )}
+                    ref={menuRef}
+                    className="fixed z-[100] overflow-hidden rounded-lg border border-line bg-surface shadow-pop"
+                    style={{ left: position.left, width: position.width, top: position.top, bottom: position.bottom }}
                 >
                     <div className="border-b border-line p-2">
                         <div className="relative">
@@ -212,7 +228,8 @@ export function SearchableSelect({
                             );
                         })}
                     </ul>
-                </div>
+                </div>,
+                document.body,
             )}
         </div>
     );

@@ -6,30 +6,30 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-    --canvas: oklch(0.976 0.003 265);
+    --canvas: oklch(0.982 0.002 247);
     --surface: oklch(1 0 0);
-    --surface-2: oklch(0.982 0.003 265);
-    --surface-3: oklch(0.962 0.005 265);
-    --line: oklch(0.923 0.005 265);
-    --line-2: oklch(0.878 0.007 265);
+    --surface-2: oklch(0.975 0.003 247);
+    --surface-3: oklch(0.955 0.004 247);
+    --line: oklch(0.91 0.005 247);
+    --line-2: oklch(0.85 0.008 247);
 
-    --ink: oklch(0.235 0.018 268);
-    --ink-2: oklch(0.478 0.017 265);
-    --ink-3: oklch(0.635 0.014 265);
+    --ink: oklch(0.205 0.012 255);
+    --ink-2: oklch(0.46 0.014 255);
+    --ink-3: oklch(0.61 0.012 255);
 
-    --brand: oklch(0.548 0.204 259);
-    --brand-2: oklch(0.482 0.198 259);
+    --brand: oklch(0.623 0.188 259);
+    --brand-2: oklch(0.553 0.205 259);
     --brand-ink: oklch(1 0 0);
-    --brand-wash: oklch(0.955 0.03 259);
-    --brand-line: oklch(0.878 0.068 259);
-    --dot: oklch(0.548 0.234 259 / 0.34);
+    --brand-wash: oklch(0.951 0.027 259);
+    --brand-line: oklch(0.84 0.075 259);
+    --dot: oklch(0.623 0.188 259 / 0.25);
 
     --rail: oklch(1 0 0);
-    --rail-2: oklch(0.962 0.005 265);
-    --rail-line: oklch(0.923 0.005 265);
-    --rail-ink: oklch(0.235 0.018 268);
-    --rail-ink-2: oklch(0.478 0.017 265);
-    --rail-ink-3: oklch(0.635 0.014 265);
+    --rail-2: oklch(0.965 0.006 255);
+    --rail-line: oklch(0.91 0.005 247);
+    --rail-ink: oklch(0.205 0.012 255);
+    --rail-ink-2: oklch(0.4 0.014 255);
+    --rail-ink-3: oklch(0.61 0.012 255);
 
     --ok: oklch(0.588 0.146 158);
     --ok-wash: oklch(0.952 0.042 158);
@@ -147,10 +147,10 @@
     --radius-sm: calc(var(--r) - 3px);
     --radius-md: calc(var(--r) - 1px);
     --radius-lg: var(--r);
-    --radius-xl: calc(var(--r) + 4px);
+    --radius-xl: calc(var(--r) + 6px);
 
-    --shadow-card: 0 1px 2px 0 oklch(0.235 0.018 268 / 0.04);
-    --shadow-pop: 0 8px 28px -6px oklch(0.235 0.018 268 / 0.16), 0 2px 6px -2px oklch(0.235 0.018 268 / 0.08);
+    --shadow-card: 0 1px 2px oklch(0.205 0.012 255 / 0.08), 0 1px 1px oklch(0.205 0.012 255 / 0.03);
+    --shadow-pop: 0 12px 30px -10px oklch(0.205 0.012 255 / 0.18), 0 3px 8px -3px oklch(0.205 0.012 255 / 0.1);
 }
 
 @layer base {

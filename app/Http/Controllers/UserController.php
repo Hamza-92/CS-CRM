@@ -25,20 +25,22 @@ class UserController extends Controller
         $sort = $request->string('sort', 'name')->toString();
         $sort = in_array($sort, self::SORTABLE, true) ? $sort : 'name';
         $direction = $request->string('direction', 'asc')->toString() === 'desc' ? 'desc' : 'asc';
+        $status = $request->string('status')->toString();
+        $status = in_array($status, ['active', 'inactive'], true) ? $status : '';
 
         $users = User::query()
             ->with('roles:id,name')
             ->search($request->string('search')->toString())
             ->when(
-                $request->filled('status'),
-                fn ($query) => $query->where('is_active', $request->string('status')->toString() === 'active'),
+                $status !== '',
+                fn ($query) => $query->where('is_active', $status === 'active'),
             )
             ->when(
                 $request->filled('role'),
                 fn ($query) => $query->whereHas('roles', fn ($q) => $q->where('name', $request->string('role')->toString())),
             )
             ->orderBy($sort, $direction)
-            ->paginate($request->integer('per_page', 15))
+            ->paginate(in_array($request->integer('per_page', 10), [10, 25, 50, 100], true) ? $request->integer('per_page', 10) : 10)
             ->withQueryString();
 
         return Inertia::render('users/index', [
@@ -46,10 +48,11 @@ class UserController extends Controller
             'roles' => $this->roleOptions($request),
             'filters' => [
                 'search' => $request->string('search')->toString(),
-                'status' => $request->string('status')->toString(),
+                'status' => $status,
                 'role' => $request->string('role')->toString(),
                 'sort' => $sort,
                 'direction' => $direction,
+                'per_page' => in_array($request->integer('per_page', 10), [10, 25, 50, 100], true) ? $request->integer('per_page', 10) : 10,
             ],
             'can' => [
                 'create' => $request->user()->can('create', User::class),
