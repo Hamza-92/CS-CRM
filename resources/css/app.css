@@ -1,0 +1,258 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    --canvas: oklch(0.976 0.003 265);
+    --surface: oklch(1 0 0);
+    --surface-2: oklch(0.982 0.003 265);
+    --surface-3: oklch(0.962 0.005 265);
+    --line: oklch(0.923 0.005 265);
+    --line-2: oklch(0.878 0.007 265);
+
+    --ink: oklch(0.235 0.018 268);
+    --ink-2: oklch(0.478 0.017 265);
+    --ink-3: oklch(0.635 0.014 265);
+
+    --brand: oklch(0.548 0.204 259);
+    --brand-2: oklch(0.482 0.198 259);
+    --brand-ink: oklch(1 0 0);
+    --brand-wash: oklch(0.955 0.03 259);
+    --brand-line: oklch(0.878 0.068 259);
+    --dot: oklch(0.548 0.234 259 / 0.34);
+
+    --rail: oklch(1 0 0);
+    --rail-2: oklch(0.962 0.005 265);
+    --rail-line: oklch(0.923 0.005 265);
+    --rail-ink: oklch(0.235 0.018 268);
+    --rail-ink-2: oklch(0.478 0.017 265);
+    --rail-ink-3: oklch(0.635 0.014 265);
+
+    --ok: oklch(0.588 0.146 158);
+    --ok-wash: oklch(0.952 0.042 158);
+    --warn: oklch(0.652 0.152 68);
+    --warn-wash: oklch(0.958 0.052 74);
+    --bad: oklch(0.581 0.213 22);
+    --bad-wash: oklch(0.955 0.032 22);
+    --info: oklch(0.598 0.118 205);
+    --info-wash: oklch(0.952 0.036 205);
+    --alt: oklch(0.585 0.208 320);
+    --alt-wash: oklch(0.955 0.036 320);
+
+    --ring: oklch(0.548 0.204 259);
+    --r: 0.5rem;
+}
+
+.dark {
+    --canvas: oklch(0.168 0.016 268);
+    --surface: oklch(0.208 0.019 268);
+    --surface-2: oklch(0.238 0.02 268);
+    --surface-3: oklch(0.272 0.021 268);
+    --line: oklch(0.298 0.021 268);
+    --line-2: oklch(0.372 0.023 268);
+
+    --ink: oklch(0.968 0.004 265);
+    --ink-2: oklch(0.712 0.018 265);
+    --ink-3: oklch(0.578 0.019 265);
+
+    --brand: oklch(0.672 0.172 259);
+    --brand-2: oklch(0.735 0.152 259);
+    --brand-ink: oklch(0.165 0.03 259);
+    --brand-wash: oklch(0.302 0.075 259);
+    --brand-line: oklch(0.395 0.095 259);
+    --dot: oklch(0.672 0.172 259 / 0.22);
+
+    --rail: oklch(0.148 0.016 268);
+    --rail-2: oklch(0.198 0.019 268);
+    --rail-line: oklch(0.252 0.02 268);
+    --rail-ink: oklch(0.958 0.004 265);
+    --rail-ink-2: oklch(0.672 0.021 265);
+    --rail-ink-3: oklch(0.522 0.022 265);
+
+    --ok: oklch(0.722 0.152 158);
+    --ok-wash: oklch(0.298 0.058 158);
+    --warn: oklch(0.788 0.148 72);
+    --warn-wash: oklch(0.315 0.058 72);
+    --bad: oklch(0.688 0.182 22);
+    --bad-wash: oklch(0.315 0.068 22);
+    --info: oklch(0.735 0.112 205);
+    --info-wash: oklch(0.298 0.05 205);
+    --alt: oklch(0.712 0.168 320);
+    --alt-wash: oklch(0.305 0.06 320);
+
+    --ring: oklch(0.672 0.172 259);
+}
+
+@theme inline {
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+    --color-surface-2: var(--surface-2);
+    --color-surface-3: var(--surface-3);
+    --color-line: var(--line);
+    --color-line-2: var(--line-2);
+
+    --color-ink: var(--ink);
+    --color-ink-2: var(--ink-2);
+    --color-ink-3: var(--ink-3);
+
+    --color-brand: var(--brand);
+    --color-brand-2: var(--brand-2);
+    --color-brand-ink: var(--brand-ink);
+    --color-brand-wash: var(--brand-wash);
+    --color-brand-line: var(--brand-line);
+
+    --color-rail: var(--rail);
+    --color-rail-2: var(--rail-2);
+    --color-rail-line: var(--rail-line);
+    --color-rail-ink: var(--rail-ink);
+    --color-rail-ink-2: var(--rail-ink-2);
+    --color-rail-ink-3: var(--rail-ink-3);
+
+    --color-ok: var(--ok);
+    --color-ok-wash: var(--ok-wash);
+    --color-warn: var(--warn);
+    --color-warn-wash: var(--warn-wash);
+    --color-bad: var(--bad);
+    --color-bad-wash: var(--bad-wash);
+    --color-info: var(--info);
+    --color-info-wash: var(--info-wash);
+    --color-alt: var(--alt);
+    --color-alt-wash: var(--alt-wash);
+
+    --color-ring: var(--ring);
+
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --text-2xs: 0.75rem;
+    --text-2xs--line-height: 1.0625rem;
+    --text-xs: 0.875rem;
+    --text-xs--line-height: 1.25rem;
+    --text-sm: 0.9375rem;
+    --text-sm--line-height: 1.375rem;
+    --text-base: 1rem;
+    --text-base--line-height: 1.5rem;
+    --text-lg: 1.125rem;
+    --text-lg--line-height: 1.625rem;
+    --text-xl: 1.25rem;
+    --text-xl--line-height: 1.75rem;
+    --text-2xl: 1.625rem;
+    --text-2xl--line-height: 2rem;
+    --text-3xl: 2rem;
+    --text-3xl--line-height: 2.375rem;
+
+    --radius-sm: calc(var(--r) - 3px);
+    --radius-md: calc(var(--r) - 1px);
+    --radius-lg: var(--r);
+    --radius-xl: calc(var(--r) + 4px);
+
+    --shadow-card: 0 1px 2px 0 oklch(0.235 0.018 268 / 0.04);
+    --shadow-pop: 0 8px 28px -6px oklch(0.235 0.018 268 / 0.16), 0 2px 6px -2px oklch(0.235 0.018 268 / 0.08);
+}
+
+@layer base {
+    * {
+        border-color: var(--line);
+    }
+
+    html {
+        background-color: var(--canvas);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    body {
+        background-color: var(--canvas);
+        color: var(--ink);
+        font-size: var(--text-xs);
+        line-height: var(--text-xs--line-height);
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 1px;
+        border-radius: 3px;
+    }
+
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    [role='switch'],
+    [role='tab'],
+    [role='menuitem'],
+    label[for],
+    summary,
+    select:not(:disabled) {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+        cursor: not-allowed;
+    }
+
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--line-2);
+        border: 3px solid var(--canvas);
+        border-radius: 99px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--ink-3);
+    }
+}
+
+@layer components {
+    .num {
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+    }
+
+    .eyebrow {
+        font-size: var(--text-2xs);
+        line-height: var(--text-2xs--line-height);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .dot-field {
+        background-color: var(--surface);
+        background-image: radial-gradient(circle at 1px 1px, var(--dot) 1.4px, transparent 0);
+        background-size: 22px 22px;
+    }
+
+    .tip-anchor {
+        position: relative;
+    }
+
+    .tip-bubble {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 140ms ease;
+    }
+
+    .tip-anchor:hover > .tip-bubble,
+    .tip-anchor:has(:focus-visible) > .tip-bubble {
+        opacity: 1;
+    }
+
+    .tip-anchor:has(:active) > .tip-bubble,
+    .tip-anchor:has([aria-expanded='true']) > .tip-bubble {
+        opacity: 0;
+        transition-duration: 0ms;
+    }
+}
