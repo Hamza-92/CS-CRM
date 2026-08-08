@@ -71,6 +71,11 @@ enum Permission: string
     case CreateSupportTickets = 'support_tickets.create';
     case EditSupportTickets = 'support_tickets.edit';
     case ArchiveSupportTickets = 'support_tickets.archive';
+    case ManageTasks = 'tasks.manage';
+    case ViewTasks = 'tasks.view';
+    case CreateTasks = 'tasks.create';
+    case EditTasks = 'tasks.edit';
+    case ArchiveTasks = 'tasks.archive';
 
     public function label(): string
     {
@@ -142,6 +147,11 @@ enum Permission: string
             self::CreateSupportTickets => 'Create support tickets',
             self::EditSupportTickets => 'Edit support tickets',
             self::ArchiveSupportTickets => 'Archive support tickets',
+            self::ManageTasks => 'Manage tasks',
+            self::ViewTasks => 'View tasks',
+            self::CreateTasks => 'Create tasks',
+            self::EditTasks => 'Edit tasks',
+            self::ArchiveTasks => 'Archive tasks',
         };
     }
 
@@ -173,6 +183,7 @@ enum Permission: string
                 self::ViewSubscriptions, self::CreateSubscriptions, self::EditSubscriptions, self::ArchiveSubscriptions,
                 self::ViewPayments, self::CreatePayments, self::EditPayments, self::ArchivePayments,
                 self::ViewSupportTickets, self::CreateSupportTickets, self::EditSupportTickets, self::ArchiveSupportTickets,
+                self::ViewTasks, self::CreateTasks, self::EditTasks, self::ArchiveTasks,
             ],
             RoleName::Sales->value => [
                 self::ViewProducts,
@@ -185,6 +196,7 @@ enum Permission: string
                 self::ViewSubscriptions, self::CreateSubscriptions, self::EditSubscriptions,
                 self::ViewPayments, self::CreatePayments, self::EditPayments,
                 self::ViewSupportTickets, self::CreateSupportTickets, self::EditSupportTickets,
+                self::ViewTasks, self::CreateTasks, self::EditTasks,
             ],
             RoleName::Developer->value => [
                 self::ViewProducts,
@@ -193,6 +205,7 @@ enum Permission: string
                 self::ViewSubscriptions, self::EditSubscriptions,
                 self::ViewPayments, self::EditPayments,
                 self::ViewSupportTickets, self::EditSupportTickets,
+                self::ViewTasks, self::EditTasks,
             ],
             RoleName::Support->value => [
                 self::ViewProducts,
@@ -203,6 +216,7 @@ enum Permission: string
                 self::ViewSubscriptions, self::EditSubscriptions,
                 self::ViewPayments, self::EditPayments,
                 self::ViewSupportTickets, self::EditSupportTickets,
+                self::ViewTasks, self::EditTasks,
             ],
             RoleName::Qa->value => [
                 self::ViewProducts,
@@ -210,6 +224,7 @@ enum Permission: string
                 self::ViewSubscriptions,
                 self::ViewPayments,
                 self::ViewSupportTickets,
+                self::ViewTasks,
             ],
             RoleName::Accounts->value => [
                 self::ViewProducts,
@@ -221,6 +236,7 @@ enum Permission: string
                 self::ViewSubscriptions,
                 self::ViewPayments,
                 self::ViewSupportTickets,
+                self::ViewTasks,
             ],
             RoleName::Management->value => [
                 self::ViewProducts,
@@ -234,6 +250,7 @@ enum Permission: string
                 self::ViewSubscriptions,
                 self::ViewPayments,
                 self::ViewSupportTickets,
+                self::ViewTasks,
             ],
         ];
     }

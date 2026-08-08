@@ -18,6 +18,7 @@ use App\Http\Controllers\ApplicationInstanceController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\WorkTaskController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/users')->name('home');
@@ -139,6 +140,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('support-tickets/{supportTicket}/status', [SupportTicketController::class, 'updateStatus'])->withTrashed()->name('support-tickets.status');
     Route::delete('support-tickets/{supportTicket}', [SupportTicketController::class, 'destroy'])->withTrashed()->name('support-tickets.destroy');
     Route::patch('support-tickets/{supportTicket}/restore', [SupportTicketController::class, 'restore'])->withTrashed()->name('support-tickets.restore');
+    Route::get('tasks', [WorkTaskController::class, 'index'])->name('tasks.index');
+    Route::get('tasks/archived', [WorkTaskController::class, 'archived'])->name('tasks.archived');
+    Route::get('tasks/create', [WorkTaskController::class, 'create'])->name('tasks.create');
+    Route::post('tasks', [WorkTaskController::class, 'store'])->name('tasks.store');
+    Route::get('tasks/{workTask}', [WorkTaskController::class, 'show'])->withTrashed()->name('tasks.show');
+    Route::get('tasks/{workTask}/edit', [WorkTaskController::class, 'edit'])->withTrashed()->name('tasks.edit');
+    Route::put('tasks/{workTask}', [WorkTaskController::class, 'update'])->withTrashed()->name('tasks.update');
+    Route::patch('tasks/{workTask}/status', [WorkTaskController::class, 'updateStatus'])->withTrashed()->name('tasks.status');
+    Route::delete('tasks/{workTask}', [WorkTaskController::class, 'destroy'])->withTrashed()->name('tasks.destroy');
+    Route::patch('tasks/{workTask}/restore', [WorkTaskController::class, 'restore'])->withTrashed()->name('tasks.restore');
     Route::get('plans/{plan}/edit', [PlanController::class, 'edit'])->name('plans.edit');
     Route::put('plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
     Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');

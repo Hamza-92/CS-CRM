@@ -1,0 +1,9 @@
+import { Head, Link, router } from '@inertiajs/react';
+import { ArchiveRestore, ArrowLeft, Eye } from 'lucide-react';
+import { PageHeader } from '@/components/page-header';
+import { Pagination } from '@/components/pagination';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
+import type { Paginated, WorkTask } from '@/types';
+export default function ArchivedTasks({ tasks }: { tasks: Paginated<WorkTask> }) { return <AppLayout><Head title="Archived tasks" /><PageHeader title="Archived tasks" actions={<Link href="/tasks"><Button variant="secondary"><ArrowLeft /> Back to Tasks</Button></Link>} /><Card className="overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-line bg-surface-2 text-xs uppercase tracking-wider text-ink-3"><tr><th className="px-4 py-3">Task</th><th className="px-4 py-3">Context</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-line">{tasks.data.map((task) => <tr key={task.id}><td className="px-4 py-3 font-semibold text-ink">{task.title}<div className="text-xs font-normal text-ink-3">{task.task_number}</div></td><td className="px-4 py-3 text-ink-2">{task.application_instance?.name || task.customer?.business || task.customer?.name || 'Unlinked'}</td><td className="px-4 py-3"><div className="flex justify-end gap-1"><Link href={`/tasks/${task.id}`}><Button variant="ghost" size="icon" aria-label="View task"><Eye /></Button></Link><Button variant="ghost" size="icon" aria-label="Restore task" onClick={() => router.patch(`/tasks/${task.id}/restore`)}><ArchiveRestore /></Button></div></td></tr>)}</tbody></table></div><Pagination meta={tasks} perPage={tasks.per_page} /></Card></AppLayout>; }

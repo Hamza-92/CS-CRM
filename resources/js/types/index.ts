@@ -74,7 +74,12 @@ export type Ability =
     | 'support_tickets.view'
     | 'support_tickets.create'
     | 'support_tickets.edit'
-    | 'support_tickets.archive';
+    | 'support_tickets.archive'
+    | 'tasks.manage'
+    | 'tasks.view'
+    | 'tasks.create'
+    | 'tasks.edit'
+    | 'tasks.archive';
 
 export interface SharedProps {
     app: { name: string; theme: 'light' | 'dark' };
@@ -394,6 +399,31 @@ export interface SupportTicket {
     is_overdue?: boolean;
     customer: { id: number; name: string; business: string | null; email?: string | null } | null;
     application_instance: ApplicationInstance | null;
+    assigned_to?: UserRef | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+}
+
+export interface WorkTask {
+    id: number;
+    customer_id: number | null;
+    application_instance_id: number | null;
+    support_ticket_id: number | null;
+    assigned_to_id: number | null;
+    task_number: string;
+    title: string;
+    description: string | null;
+    priority: 'low' | 'normal' | 'high' | 'urgent';
+    priority_label?: string;
+    status: 'open' | 'in_progress' | 'completed' | 'cancelled';
+    status_label?: string;
+    due_at: string | null;
+    completed_at: string | null;
+    is_overdue?: boolean;
+    customer: { id: number; name: string; business: string | null } | null;
+    application_instance: ApplicationInstance | null;
+    support_ticket?: { id: number; ticket_number: string; subject: string } | null;
     assigned_to?: UserRef | null;
     created_at: string;
     updated_at: string;
