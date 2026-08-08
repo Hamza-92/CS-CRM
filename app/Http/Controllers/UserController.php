@@ -64,7 +64,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request, ActivityLogger $logger): RedirectResponse
     {
         $data = $request->validated();
         $role = $data['role'];
@@ -72,20 +72,31 @@ class UserController extends Controller
 
         $user = User::create($data);
         $user->syncRoles([$role]);
+        $logger->log('user.role_assigned', $user, "Role assigned to {$user->name}", [
+            'new' => ['roles' => [$role]],
+        ]);
 
         return back()->with('success', "User {$user->name} created.");
     }
 
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, User $user, ActivityLogger $logger): RedirectResponse
     {
         $data = $request->validated();
         $role = $data['role'];
         unset($data['role']);
+        $oldRoles = $user->getRoleNames()->values()->all();
 
         $user->update($data);
 
         if ($request->user()->can('assignRoles', $user)) {
             $user->syncRoles([$role]);
+
+            if ($oldRoles !== [$role]) {
+                $logger->log('user.roles_changed', $user, "Roles changed for {$user->name}", [
+                    'old' => ['roles' => $oldRoles],
+                    'new' => ['roles' => [$role]],
+                ]);
+            }
         }
 
         return back()->with('success', "User {$user->name} updated.");
@@ -100,7 +111,7 @@ class UserController extends Controller
         return back()->with('success', "Password reset for {$user->name}.");
     }
 
-    public function toggleStatus(Request $request, User $user): RedirectResponse
+    public function toggleStatus(Request $request, User $user, ActivityLogger $logger): RedirectResponse
     {
         if ($request->user()?->is($user)) {
             return back()->with('error', 'You cannot change your own status.');
@@ -112,7 +123,12 @@ class UserController extends Controller
 
         Gate::authorize('toggleStatus', $user);
 
+        $oldStatus = $user->is_active ? 'active' : 'inactive';
         $user->update(['is_active' => ! $user->is_active]);
+        $logger->log('user.status_changed', $user, "User {$user->name} status changed", [
+            'old' => ['status' => $oldStatus],
+            'new' => ['status' => $user->is_active ? 'active' : 'inactive'],
+        ]);
 
         return back()->with('success', "{$user->name} is now ".($user->is_active ? 'active' : 'inactive').'.');
     }

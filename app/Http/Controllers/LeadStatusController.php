@@ -53,7 +53,12 @@ class LeadStatusController extends Controller
     public function toggle(Request $request, LeadStatusOption $leadStatus): RedirectResponse
     {
         $this->authorize($request);
+        $oldStatus = $leadStatus->status;
         $leadStatus->update(['status' => $leadStatus->status === 'active' ? 'inactive' : 'active']);
+        $leadStatus->recordActivity('status_changed', [
+            'old' => ['status' => $oldStatus],
+            'new' => ['status' => $leadStatus->status],
+        ]);
 
         return back()->with('success', "Lead status {$leadStatus->name} is now {$leadStatus->status}.");
     }

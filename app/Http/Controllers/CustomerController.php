@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\Audit\ActivityLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,6 +54,7 @@ class CustomerController extends Controller
 
         return Inertia::render('customers/show', [
             'customer' => $this->payload($customer),
+            'activities' => $customer->activities()->with('user:id,name,avatar_path')->limit(20)->get(),
             'sourceLead' => $sourceLead,
             'followUps' => $customer->followUps->sortByDesc('scheduled_at')->values()->map(fn ($followUp) => [
                 'id' => $followUp->id,
@@ -78,9 +80,17 @@ class CustomerController extends Controller
         return Inertia::render('customers/edit', ['customer' => $this->payload($customer), 'owners' => $this->owners()]);
     }
 
-    public function update(UpdateCustomerRequest $request, Customer $customer): RedirectResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer, ActivityLogger $logger): RedirectResponse
     {
+        $oldStatus = $customer->status;
         $customer->update($request->validated());
+
+        if ($oldStatus !== $customer->status) {
+            $logger->log('customer.status_changed', $customer, "Customer {$customer->name} status changed", [
+                'old' => ['status' => $oldStatus],
+                'new' => ['status' => $customer->status],
+            ]);
+        }
 
         return redirect()->route('customers.show', $customer)->with('success', "Customer {$customer->name} updated.");
     }

@@ -7,6 +7,7 @@ use App\Http\Requests\StorePlanRequest;
 use App\Http\Requests\UpdatePlanRequest;
 use App\Models\Plan;
 use App\Models\Product;
+use App\Support\Audit\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -65,9 +66,17 @@ class PlanController extends Controller
         ]);
     }
 
-    public function update(UpdatePlanRequest $request, Plan $plan): RedirectResponse
+    public function update(UpdatePlanRequest $request, Plan $plan, ActivityLogger $logger): RedirectResponse
     {
+        $oldStatus = $plan->is_active ? 'active' : 'inactive';
         $plan->update($request->validated());
+
+        if ($oldStatus !== ($plan->is_active ? 'active' : 'inactive')) {
+            $logger->log('plan.status_changed', $plan, "Plan {$plan->name} status changed", [
+                'old' => ['status' => $oldStatus],
+                'new' => ['status' => $plan->is_active ? 'active' : 'inactive'],
+            ]);
+        }
 
         return redirect()
             ->route('products.show', $plan->product_id)

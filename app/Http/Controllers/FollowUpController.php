@@ -9,6 +9,7 @@ use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\Audit\ActivityLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -91,20 +92,32 @@ class FollowUpController extends Controller
         return Inertia::render('follow-ups/edit', ['followUp' => $this->payload($followUp), ...$this->formOptions($followUp->lead_id, $followUp->customer_id)]);
     }
 
-    public function update(UpdateFollowUpRequest $request, FollowUp $followUp): RedirectResponse
+    public function update(UpdateFollowUpRequest $request, FollowUp $followUp, ActivityLogger $logger): RedirectResponse
     {
+        $oldStatus = $followUp->status;
         $followUp->update($this->validatedLinkedData($request->validated()));
+
+        if ($oldStatus !== $followUp->status) {
+            $logger->log('follow_up.status_changed', $followUp, 'Follow-up status changed', [
+                'old' => ['status' => $oldStatus],
+                'new' => ['status' => $followUp->status],
+            ]);
+        }
 
         return redirect()->route('follow-ups.index')->with('success', 'Follow-up updated.');
     }
 
-    public function complete(Request $request, FollowUp $followUp): RedirectResponse
+    public function complete(Request $request, FollowUp $followUp, ActivityLogger $logger): RedirectResponse
     {
         abort_unless($request->user()->can('complete', $followUp), 403);
         if ($followUp->status === 'completed') return back()->with('info', 'This follow-up is already completed.');
 
         $followUp->update(['status' => 'completed', 'completed_at' => now(), 'completed_by_id' => $request->user()->id]);
-        if ($followUp->customer_id) Customer::whereKey($followUp->customer_id)->update(['last_contacted_at' => now()]);
+        $logger->log('follow_up.completed', $followUp, 'Follow-up completed');
+        if ($followUp->customer_id) {
+            $customer = Customer::query()->find($followUp->customer_id);
+            $customer?->update(['last_contacted_at' => now()]);
+        }
 
         if ($request->boolean('create_next')) {
             $nextDate = $request->date('next_scheduled_at');
@@ -125,10 +138,11 @@ class FollowUpController extends Controller
         return back()->with('success', 'Follow-up marked as completed.');
     }
 
-    public function cancel(Request $request, FollowUp $followUp): RedirectResponse
+    public function cancel(Request $request, FollowUp $followUp, ActivityLogger $logger): RedirectResponse
     {
         abort_unless($request->user()->can('update', $followUp), 403);
         $followUp->update(['status' => 'cancelled']);
+        $logger->log('follow_up.cancelled', $followUp, 'Follow-up cancelled');
 
         return back()->with('success', 'Follow-up cancelled.');
     }

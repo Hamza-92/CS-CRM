@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Support\Audit\ActivityLogger;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -34,6 +35,9 @@ class LoginRequest extends FormRequest
 
         if (! Auth::attempt($this->credentials(), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
+            app(ActivityLogger::class)->log('auth.failed', null, 'Failed sign-in attempt', [
+                'email' => $this->string('email')->toString(),
+            ]);
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),

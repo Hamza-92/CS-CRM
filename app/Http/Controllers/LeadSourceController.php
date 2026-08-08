@@ -53,7 +53,12 @@ class LeadSourceController extends Controller
     public function toggle(Request $request, LeadSourceOption $leadSource): RedirectResponse
     {
         $this->authorize($request);
+        $oldStatus = $leadSource->status;
         $leadSource->update(['status' => $leadSource->status === 'active' ? 'inactive' : 'active']);
+        $leadSource->recordActivity('status_changed', [
+            'old' => ['status' => $oldStatus],
+            'new' => ['status' => $leadSource->status],
+        ]);
 
         return back()->with('success', "Lead source {$leadSource->name} is now {$leadSource->status}.");
     }

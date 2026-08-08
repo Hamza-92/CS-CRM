@@ -6,6 +6,7 @@ use App\Enums\Permission as PermissionEnum;
 use App\Enums\RoleName;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
+use App\Support\Audit\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -74,31 +75,49 @@ class RoleController extends Controller
         ]);
     }
 
-    public function store(StoreRoleRequest $request): RedirectResponse
+    public function store(StoreRoleRequest $request, ActivityLogger $logger): RedirectResponse
     {
         $data = $request->validated();
         $this->ensurePermissionRecords();
         $role = Role::create(['name' => $data['name'], 'guard_name' => 'web']);
         $role->syncPermissions($data['permissions'] ?? []);
+        $logger->log('role.created', $role, "Role {$role->name} created", [
+            'new' => [
+                'name' => $role->name,
+                'permissions' => $role->permissions->pluck('name')->values()->all(),
+            ],
+        ]);
 
         return back()->with('success', "Role {$role->name} created.");
     }
 
-    public function update(UpdateRoleRequest $request, Role $role): RedirectResponse
+    public function update(UpdateRoleRequest $request, Role $role, ActivityLogger $logger): RedirectResponse
     {
         if ($role->name === RoleName::SuperAdmin->value) {
             return back()->with('error', 'The Super Admin role is protected.');
         }
 
         $data = $request->validated();
+        $old = [
+            'name' => $role->name,
+            'permissions' => $role->permissions->pluck('name')->values()->all(),
+        ];
         $this->ensurePermissionRecords();
         $role->update(['name' => $data['name']]);
         $role->syncPermissions($data['permissions'] ?? []);
+        $role->load('permissions:id,name');
+        $logger->log('role.updated', $role, "Role {$role->name} updated", [
+            'old' => $old,
+            'new' => [
+                'name' => $role->name,
+                'permissions' => $role->permissions->pluck('name')->values()->all(),
+            ],
+        ]);
 
         return back()->with('success', "Role {$role->name} updated.");
     }
 
-    public function destroy(Request $request, Role $role): RedirectResponse
+    public function destroy(Request $request, Role $role, ActivityLogger $logger): RedirectResponse
     {
         $this->authorizeManage($request);
 
@@ -111,6 +130,12 @@ class RoleController extends Controller
         }
 
         $name = $role->name;
+        $logger->log('role.deleted', $role, "Role {$name} deleted", [
+            'old' => [
+                'name' => $name,
+                'permissions' => $role->permissions->pluck('name')->values()->all(),
+            ],
+        ]);
         $role->delete();
 
         return back()->with('success', "Role {$name} deleted.");

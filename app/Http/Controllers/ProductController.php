@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProductRequest;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\Audit\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,7 +34,7 @@ class ProductController extends Controller
         return $this->listing($request, true);
     }
 
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request, ActivityLogger $logger): StreamedResponse
     {
         Gate::authorize('viewAny', Product::class);
 
@@ -50,6 +51,10 @@ class ProductController extends Controller
             ->get();
 
         $filename = $archived ? 'archived-products.csv' : 'products.csv';
+        $logger->log('product.exported', null, 'Products exported', [
+            'archived' => $archived,
+            'count' => $products->count(),
+        ]);
 
         return response()->streamDownload(function () use ($products): void {
             $handle = fopen('php://output', 'wb');
@@ -73,7 +78,7 @@ class ProductController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    public function import(Request $request): RedirectResponse
+    public function import(Request $request, ActivityLogger $logger): RedirectResponse
     {
         Gate::authorize('create', Product::class);
 
@@ -178,6 +183,10 @@ class ProductController extends Controller
         }
 
         DB::transaction(fn () => collect($rows)->each(fn (array $row) => Product::create($row)));
+        $logger->log('product.imported', null, 'Products imported', [
+            'count' => count($rows),
+            'codes' => collect($rows)->pluck('code')->values()->all(),
+        ]);
 
         return back()->with('success', count($rows).' product'.(count($rows) === 1 ? '' : 's').' imported.');
     }
@@ -270,9 +279,17 @@ class ProductController extends Controller
         ]);
     }
 
-    public function update(UpdateProductRequest $request, Product $product): RedirectResponse
+    public function update(UpdateProductRequest $request, Product $product, ActivityLogger $logger): RedirectResponse
     {
+        $oldStatus = $product->is_active ? 'active' : 'inactive';
         $product->update($request->validated());
+
+        if ($oldStatus !== ($product->is_active ? 'active' : 'inactive')) {
+            $logger->log('product.status_changed', $product, "Product {$product->name} status changed", [
+                'old' => ['status' => $oldStatus],
+                'new' => ['status' => $product->is_active ? 'active' : 'inactive'],
+            ]);
+        }
 
         return redirect()
             ->route('products.show', $product)

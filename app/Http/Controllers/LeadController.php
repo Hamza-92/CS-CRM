@@ -12,6 +12,7 @@ use App\Models\LeadSourceOption;
 use App\Models\LeadStatusOption;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\Audit\ActivityLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,6 +62,7 @@ class LeadController extends Controller
         return Inertia::render('leads/show', [
             'lead' => $this->payload($lead),
             'products' => $products,
+            'activities' => $lead->activities()->with('user:id,name,avatar_path')->limit(20)->get(),
             'followUps' => $lead->followUps->sortByDesc('scheduled_at')->values()->map(fn ($followUp) => [
                 'id' => $followUp->id,
                 'reason' => $followUp->reason,
@@ -90,14 +92,26 @@ class LeadController extends Controller
         return Inertia::render('leads/edit', ['lead' => $this->payload($lead), ...$this->formOptions()]);
     }
 
-    public function update(UpdateLeadRequest $request, Lead $lead): RedirectResponse
+    public function update(UpdateLeadRequest $request, Lead $lead, ActivityLogger $logger): RedirectResponse
     {
+        $lead->load('statusDefinition');
+        $oldStatus = $lead->status;
+        $oldStatusLabel = $lead->statusDefinition?->name ?? Str::headline($oldStatus);
         $lead->update($request->validated());
+
+        if ($oldStatus !== $lead->status) {
+            $lead->load('statusDefinition');
+            $newStatusLabel = $lead->statusDefinition?->name ?? Str::headline($lead->status);
+            $logger->log('lead.status_changed', $lead, "Lead {$lead->name} moved to {$newStatusLabel}", [
+                'old' => ['status' => $oldStatus, 'status_label' => $oldStatusLabel],
+                'new' => ['status' => $lead->status, 'status_label' => $newStatusLabel],
+            ]);
+        }
 
         return redirect()->route('leads.show', $lead)->with('success', "Lead {$lead->name} updated.");
     }
 
-    public function convert(Request $request, Lead $lead): RedirectResponse
+    public function convert(Request $request, Lead $lead, ActivityLogger $logger): RedirectResponse
     {
         abort_unless($request->user()->can('convert', $lead), 403);
 
@@ -105,6 +119,7 @@ class LeadController extends Controller
             return redirect()->route('customers.show', $lead->customer_id)->with('info', 'This lead has already been converted.');
         }
 
+        $oldStatus = $lead->status;
         $customer = DB::transaction(function () use ($lead): Customer {
             $customer = Customer::create([
                 'name' => $lead->name,
@@ -129,15 +144,32 @@ class LeadController extends Controller
             return $customer;
         });
 
+        $lead->refresh();
+        $logger->log('lead.converted', $lead, "Lead {$lead->name} converted to a customer", [
+            'old' => ['status' => $oldStatus, 'customer_id' => null],
+            'new' => ['status' => $lead->status, 'customer_id' => $customer->id],
+        ]);
+
         return redirect()->route('customers.show', $customer)->with('success', "{$lead->name} converted to a customer.");
     }
 
-    public function updateStatus(Request $request, Lead $lead): RedirectResponse
+    public function updateStatus(Request $request, Lead $lead, ActivityLogger $logger): RedirectResponse
     {
         abort_unless($request->user()->can('update', $lead), 403);
         $data = $request->validate(['status' => ['required', 'string', 'exists:lead_statuses,slug']]);
+        $lead->load('statusDefinition');
+        $oldStatus = $lead->status;
+        $oldStatusLabel = $lead->statusDefinition?->name ?? Str::headline($oldStatus);
         $lead->update(['status' => $data['status']]);
         $lead->load('statusDefinition');
+        $newStatusLabel = $lead->statusDefinition?->name ?? Str::headline($lead->status);
+
+        if ($oldStatus !== $lead->status) {
+            $logger->log('lead.status_changed', $lead, "Lead {$lead->name} moved to {$newStatusLabel}", [
+                'old' => ['status' => $oldStatus, 'status_label' => $oldStatusLabel],
+                'new' => ['status' => $lead->status, 'status_label' => $newStatusLabel],
+            ]);
+        }
 
         return back()->with('success', "Lead {$lead->name} moved to ".($lead->statusDefinition?->name ?? Str::headline($lead->status)).'.');
     }
