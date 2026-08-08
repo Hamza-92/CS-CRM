@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Permission;
 use App\Http\Requests\StoreFollowUpRequest;
 use App\Http\Requests\UpdateFollowUpRequest;
 use App\Models\Customer;
@@ -60,9 +61,9 @@ class FollowUpController extends Controller
             ],
             'can' => [
                 'create' => $request->user()->can('create', FollowUp::class),
-                'update' => $request->user()->can('update', FollowUp::class),
-                'delete' => $request->user()->can('delete', FollowUp::class),
-                'complete' => $request->user()->can('complete', FollowUp::class),
+                'update' => $request->user()->can(Permission::EditFollowUps->value) || $request->user()->can(Permission::ManageFollowUps->value),
+                'delete' => $request->user()->can(Permission::DeleteFollowUps->value) || $request->user()->can(Permission::ManageFollowUps->value),
+                'complete' => $request->user()->can(Permission::CompleteFollowUps->value) || $request->user()->can(Permission::ManageFollowUps->value),
             ],
         ]);
     }
