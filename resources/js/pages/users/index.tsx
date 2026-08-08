@@ -34,6 +34,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useFilters } from '@/hooks/use-filters';
+import { useAuth } from '@/hooks/use-auth';
 import AppLayout from '@/layouts/app-layout';
 import type { ManagedUser, Paginated, RoleOption } from '@/types';
 import { shortDate } from '@/lib/format';
@@ -50,6 +51,7 @@ const actionButton =
     'flex size-8 items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-4';
 
 export default function UsersIndex({ users, roles, filters, can }: Props) {
+    const { user: currentUser } = useAuth();
     const { values, set, setMany } = useFilters('/users', {
         search: filters.search,
         status: filters.status,
@@ -337,14 +339,16 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                                                             </button>
                                                         </Tooltip>
 
-                                                        <Tooltip label="Delete">
+                                                        <Tooltip label={currentUser?.id === user.id ? 'You cannot delete your own account' : 'Delete'}>
                                                             <button
                                                                 type="button"
                                                                 aria-label={`Delete ${user.name}`}
                                                                 onClick={() => remove(user)}
+                                                                disabled={currentUser?.id === user.id}
                                                                 className={cn(
                                                                     actionButton,
                                                                     'hover:bg-bad-wash hover:text-bad',
+                                                                    currentUser?.id === user.id && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3',
                                                                 )}
                                                             >
                                                                 <Trash2 />
@@ -388,7 +392,7 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                                             <Tooltip label="Edit"><button type="button" onClick={() => openEdit(user)} className={cn(actionButton, 'text-warn hover:bg-warn-wash hover:text-warn')}><Pencil /></button></Tooltip>
                                             <Tooltip label="Reset password"><button type="button" onClick={() => setResetting(user)} className={cn(actionButton, 'text-brand hover:bg-brand-wash hover:text-brand')}><KeyRound /></button></Tooltip>
                                             <Tooltip label={user.is_active ? 'Deactivate' : 'Activate'}><button type="button" onClick={() => toggleStatus(user)} className={cn(actionButton, 'text-warn hover:bg-warn-wash hover:text-warn')}>{user.is_active ? <Lock /> : <LockOpen />}</button></Tooltip>
-                                            <Tooltip label="Delete"><button type="button" onClick={() => remove(user)} className={cn(actionButton, 'text-bad hover:bg-bad-wash hover:text-bad')}><Trash2 /></button></Tooltip>
+                                            <Tooltip label={currentUser?.id === user.id ? 'You cannot delete your own account' : 'Delete'}><button type="button" onClick={() => remove(user)} disabled={currentUser?.id === user.id} className={cn(actionButton, 'text-bad hover:bg-bad-wash hover:text-bad', currentUser?.id === user.id && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}><Trash2 /></button></Tooltip>
                                         </>}
                                     </div>
                                     {user.roles?.[0] ? (
