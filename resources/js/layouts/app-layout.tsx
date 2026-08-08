@@ -117,7 +117,7 @@ function Rail({
                     <div key={group.label}>
                         {(() => {
                             const groupActive = group.items.some((item) => item.match(path));
-                            const expanded = !group.collapsible || openGroups[group.label] || groupActive;
+                            const expanded = !group.collapsible || (openGroups[group.label] ?? groupActive);
                             const GroupIcon = group.icon;
                             return <>
                                 {!collapsed && (group.collapsible ? <button type="button" onClick={() => setOpenGroups((current) => ({ ...current, [group.label]: !expanded }))} className={cn('mb-1.5 flex w-full items-center gap-2 px-2.5 text-left text-xs font-semibold transition-colors', groupActive ? 'text-brand' : 'text-rail-ink-3')}>{GroupIcon && <GroupIcon className="size-4" />}<span className="flex-1">{group.label}</span><ChevronDown className={cn('size-3.5 transition-transform', expanded && 'rotate-180')} /></button> : <p className="eyebrow mb-1.5 px-2.5 text-rail-ink-3">{group.label}</p>)}
