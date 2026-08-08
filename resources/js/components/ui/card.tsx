@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
     return (
         <div
-            className={cn('overflow-hidden rounded-lg border border-line bg-surface shadow-card', className)}
+            className={cn('relative overflow-hidden rounded-lg border border-line bg-surface shadow-card before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-brand/45 before:via-transparent before:to-info/30', className)}
             {...props}
         />
     );
@@ -22,7 +22,7 @@ export function CardHeader({
     className?: string;
 }) {
     return (
-        <div className={cn('flex h-12 items-center justify-between gap-3 border-b border-line px-3.5', className)}>
+        <div className={cn('flex h-12 items-center justify-between gap-3 border-b border-line bg-surface-2/35 px-3.5', className)}>
             <div className="flex min-w-0 items-center gap-2">
                 <h2 className="truncate text-xs font-semibold text-ink">{title}</h2>
                 {meta && <span className="shrink-0 text-2xs text-ink-3">{meta}</span>}

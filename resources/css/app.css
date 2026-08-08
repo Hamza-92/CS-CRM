@@ -245,6 +245,13 @@
         background-size: 22px 22px;
     }
 
+    .app-canvas {
+        background-color: var(--canvas);
+        background-image:
+            radial-gradient(circle at 100% 0%, color-mix(in oklch, var(--brand) 7%, transparent), transparent 34rem),
+            radial-gradient(circle at 0% 100%, color-mix(in oklch, var(--info) 5%, transparent), transparent 30rem);
+    }
+
     .tip-anchor {
         position: relative;
     }

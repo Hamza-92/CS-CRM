@@ -6,6 +6,8 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     Search,
+    Moon,
+    Sun,
     Users,
     X,
     type LucideIcon,
@@ -16,6 +18,7 @@ import { ToastProvider } from '@/components/toast';
 import { UserMenu } from '@/components/user-menu';
 import { Wordmark, WordmarkBadge } from '@/components/wordmark';
 import { useAuth } from '@/hooks/use-auth';
+import { useTheme } from '@/hooks/use-theme';
 import type { Ability, SharedProps } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -148,6 +151,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
         setCollapsed(window.localStorage.getItem(STORAGE_KEY) === '1');
@@ -165,7 +169,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     return (
         <ToastProvider>
-        <div className="min-h-screen bg-canvas">
+        <div className="app-canvas min-h-screen">
             <aside
                 className={cn(
                     'fixed inset-y-0 left-0 z-30 hidden transition-[width] duration-200 lg:block',
@@ -198,7 +202,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             )}
 
             <div className={cn('transition-[padding] duration-200', collapsed ? 'lg:pl-16' : 'lg:pl-64')}>
-                <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur-md sm:px-6">
+                <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-brand-line/35 bg-surface/95 px-4 backdrop-blur-md sm:px-6">
                     <button
                         type="button"
                         onClick={() => setMobileOpen(true)}
@@ -238,6 +242,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         className="relative flex size-9 shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors hover:bg-surface-3 hover:text-ink"
                     >
                         <Bell className="size-4" />
+                    </button>
+
+                    <button
+                        type="button"
+                        aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                        title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                        onClick={toggleTheme}
+                        className="flex size-9 shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors hover:bg-brand-wash hover:text-brand"
+                    >
+                        {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
                     </button>
 
                     <span className="h-5 w-px bg-line" aria-hidden="true" />

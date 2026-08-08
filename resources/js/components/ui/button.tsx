@@ -11,7 +11,7 @@ const button = cva(
                 secondary: 'border border-line-2 bg-surface text-ink shadow-card hover:border-ink-3 hover:bg-surface-2',
                 subtle: 'bg-surface-3 text-ink-2 hover:bg-line hover:text-ink',
                 ghost: 'text-ink-3 hover:bg-surface-3 hover:text-ink',
-                danger: 'bg-bad text-white shadow-card hover:brightness-110 active:scale-[0.985]',
+                danger: 'bg-bad text-brand-ink shadow-card hover:brightness-110 active:scale-[0.985]',
                 link: 'text-brand underline-offset-4 hover:underline',
             },
             size: {

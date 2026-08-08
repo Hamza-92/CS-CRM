@@ -33,7 +33,7 @@ export type Ability =
     | 'activity_log.view';
 
 export interface SharedProps {
-    app: { name: string };
+    app: { name: string; theme: 'light' | 'dark' };
     auth: {
         user: AuthUser | null;
         can: Partial<Record<Ability, boolean>>;

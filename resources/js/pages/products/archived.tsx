@@ -52,8 +52,8 @@ export default function ArchivedProducts({ products, filters }: Props) {
                         <Input type="search" placeholder="Search archived products" aria-label="Search archived products" className="pl-8" value={values.search ?? ''} onChange={(event) => set('search', event.target.value, 300)} />
                     </div>
                     <div className="ml-auto flex rounded-md border border-line bg-surface p-0.5">
-                        <button type="button" aria-label="List view" onClick={() => setActiveView('list')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'list' ? 'bg-brand text-white' : 'text-ink-3 hover:bg-surface-3')}><List className="size-4" /></button>
-                        <button type="button" aria-label="Grid view" onClick={() => setActiveView('grid')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'grid' ? 'bg-brand text-white' : 'text-ink-3 hover:bg-surface-3')}><LayoutGrid className="size-4" /></button>
+                        <button type="button" aria-label="List view" onClick={() => setActiveView('list')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'list' ? 'bg-brand text-brand-ink' : 'text-ink-3 hover:bg-surface-3')}><List className="size-4" /></button>
+                        <button type="button" aria-label="Grid view" onClick={() => setActiveView('grid')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'grid' ? 'bg-brand text-brand-ink' : 'text-ink-3 hover:bg-surface-3')}><LayoutGrid className="size-4" /></button>
                     </div>
                 </div>
             </Card>

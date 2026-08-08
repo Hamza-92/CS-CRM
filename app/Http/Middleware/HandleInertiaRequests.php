@@ -26,6 +26,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'app' => [
                 'name' => config('app.name'),
+                'theme' => $request->session()->get('theme', 'light'),
             ],
             'auth' => [
                 'user' => $user ? [

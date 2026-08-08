@@ -59,7 +59,7 @@ export default function LoginHistoryIndex({ loginHistory, filters }: Props) {
                 ) : (
                     <div className="w-full overflow-hidden">
                         <table className="w-full border-collapse">
-                            <thead className="bg-[#F0F0F1]">
+                            <thead className="bg-[#F0F0F1] dark:bg-surface-2">
                                 <tr className="border-b border-line">
                                     <th className="h-10 w-12 px-3.5 text-left text-xs font-semibold text-ink-2">#</th>
                                     <th className="h-10 px-3 text-left text-xs font-semibold text-ink-2">User</th>

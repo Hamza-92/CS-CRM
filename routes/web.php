@@ -5,6 +5,7 @@ use App\Http\Controllers\LoginHistoryController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,7 @@ Route::middleware('auth')->group(function () {
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::patch('theme', [ThemeController::class, 'update'])->name('theme.update');
 
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('products', [ProductController::class, 'index'])->name('products.index');

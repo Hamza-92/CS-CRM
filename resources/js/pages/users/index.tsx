@@ -218,8 +218,8 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
 
                     <div className="ml-auto flex items-center gap-2">
                         <div className="mr-2 flex rounded-md border border-line bg-surface p-0.5">
-                            <button type="button" aria-label="List view" onClick={() => setActiveView('list')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'list' ? 'bg-brand text-white' : 'text-ink-3 hover:bg-surface-3')}><List className="size-4" /></button>
-                            <button type="button" aria-label="Grid view" onClick={() => setActiveView('grid')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'grid' ? 'bg-brand text-white' : 'text-ink-3 hover:bg-surface-3')}><LayoutGrid className="size-4" /></button>
+                            <button type="button" aria-label="List view" onClick={() => setActiveView('list')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'list' ? 'bg-brand text-brand-ink' : 'text-ink-3 hover:bg-surface-3')}><List className="size-4" /></button>
+                            <button type="button" aria-label="Grid view" onClick={() => setActiveView('grid')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'grid' ? 'bg-brand text-brand-ink' : 'text-ink-3 hover:bg-surface-3')}><LayoutGrid className="size-4" /></button>
                         </div>
                     </div>
                 </div>
@@ -231,7 +231,7 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
 
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
-                        <thead className="bg-[#F0F0F1]">
+                        <thead className="bg-[#F0F0F1] dark:bg-surface-2">
                             <tr className="border-b border-line">
                                 <th scope="col" className="h-10 w-12 px-3.5 text-left text-xs font-semibold text-ink-2">
                                     #

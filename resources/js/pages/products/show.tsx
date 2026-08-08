@@ -114,7 +114,7 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                             </CardBody>
                         ) : (
                             <table className="w-full border-collapse">
-                                <thead className="bg-[#F0F0F1]">
+                                <thead className="bg-[#F0F0F1] dark:bg-surface-2">
                                     <tr className="border-b border-line">
                                         <th className="h-10 px-3.5 text-left text-xs font-semibold text-ink-2">Plan</th>
                                         <th className="h-10 px-3 text-left text-xs font-semibold text-ink-2">Cycle</th>
