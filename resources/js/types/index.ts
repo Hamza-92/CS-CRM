@@ -42,7 +42,13 @@ export type Ability =
     | 'customers.view'
     | 'customers.create'
     | 'customers.edit'
-    | 'customers.archive';
+    | 'customers.archive'
+    | 'follow_ups.manage'
+    | 'follow_ups.view'
+    | 'follow_ups.create'
+    | 'follow_ups.edit'
+    | 'follow_ups.delete'
+    | 'follow_ups.complete';
 
 export interface SharedProps {
     app: { name: string; theme: 'light' | 'dark' };
@@ -142,6 +148,24 @@ export interface Customer {
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
+}
+
+export interface FollowUp {
+    id: number;
+    lead_id: number | null;
+    customer_id: number | null;
+    reason: string;
+    notes: string | null;
+    owner_id: number | null;
+    owner: UserRef | null;
+    scheduled_at: string;
+    status: 'pending' | 'completed' | 'rescheduled' | 'cancelled';
+    status_label: string;
+    is_overdue: boolean;
+    completed_at: string | null;
+    subject: { id: number; name: string; business: string | null; type: 'lead' | 'customer' } | null;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface RoleOption {

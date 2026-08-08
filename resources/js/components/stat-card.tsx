@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 
 export type StatTone = 'brand' | 'ok' | 'warn' | 'bad' | 'info' | 'alt';
@@ -20,6 +21,24 @@ const stroke: Record<StatTone, string> = {
     bad: 'text-bad',
     info: 'text-info',
     alt: 'text-alt',
+};
+
+const shellTone: Record<StatTone, string> = {
+    brand: 'border-brand-line/55 bg-brand-wash/55',
+    ok: 'border-ok/30 bg-ok-wash/55',
+    warn: 'border-warn/30 bg-warn-wash/55',
+    bad: 'border-bad/30 bg-bad-wash/55',
+    info: 'border-info/30 bg-info-wash/55',
+    alt: 'border-alt/30 bg-alt-wash/55',
+};
+
+const hoverShadow: Record<StatTone, string> = {
+    brand: '0 12px 28px -16px color-mix(in oklch, var(--brand) 42%, transparent)',
+    ok: '0 12px 28px -16px color-mix(in oklch, var(--ok) 42%, transparent)',
+    warn: '0 12px 28px -16px color-mix(in oklch, var(--warn) 42%, transparent)',
+    bad: '0 12px 28px -16px color-mix(in oklch, var(--bad) 42%, transparent)',
+    info: '0 12px 28px -16px color-mix(in oklch, var(--info) 42%, transparent)',
+    alt: '0 12px 28px -16px color-mix(in oklch, var(--alt) 42%, transparent)',
 };
 
 export function Sparkline({ points, className }: { points: number[]; className?: string }) {
@@ -70,7 +89,7 @@ export function StatCard({
     href?: string;
 }) {
     const body = (
-        <>
+        <div className="relative z-10">
             <div className="flex items-center justify-between gap-2">
                 <p className="eyebrow truncate text-ink-3">{label}</p>
                 <span className={cn('flex size-6 shrink-0 items-center justify-center rounded', chip[tone])}>
@@ -91,19 +110,21 @@ export function StatCard({
             {caption && <p className="mt-1 truncate text-2xs text-ink-3">{caption}</p>}
 
             {trend && <Sparkline points={trend} className={cn('mt-2 -mb-1', stroke[tone])} />}
-        </>
+        </div>
     );
 
     const shell = cn(
-        'block rounded-lg border border-line bg-surface p-3 shadow-card transition-all duration-150',
-        href && 'hover:-translate-y-px hover:border-line-2 hover:shadow-pop',
+        cn('relative block rounded-xl border p-4 shadow-card transition-all duration-200 hover:-translate-y-px hover:[box-shadow:var(--stat-shadow)]', shellTone[tone]),
+        href && 'cursor-pointer',
     );
 
+    const shellStyle = { ['--stat-shadow' as string]: hoverShadow[tone] } as CSSProperties;
+
     return href ? (
-        <Link href={href} className={shell}>
+        <Link href={href} className={shell} style={shellStyle}>
             {body}
         </Link>
     ) : (
-        <div className={shell}>{body}</div>
+        <div className={shell} style={shellStyle}>{body}</div>
     );
 }

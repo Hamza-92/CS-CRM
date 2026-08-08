@@ -39,6 +39,12 @@ enum Permission: string
     case CreateCustomers = 'customers.create';
     case EditCustomers = 'customers.edit';
     case ArchiveCustomers = 'customers.archive';
+    case ManageFollowUps = 'follow_ups.manage';
+    case ViewFollowUps = 'follow_ups.view';
+    case CreateFollowUps = 'follow_ups.create';
+    case EditFollowUps = 'follow_ups.edit';
+    case DeleteFollowUps = 'follow_ups.delete';
+    case CompleteFollowUps = 'follow_ups.complete';
 
     public function label(): string
     {
@@ -78,6 +84,12 @@ enum Permission: string
             self::CreateCustomers => 'Create customers',
             self::EditCustomers => 'Edit customers',
             self::ArchiveCustomers => 'Archive customers',
+            self::ManageFollowUps => 'Manage follow-ups',
+            self::ViewFollowUps => 'View follow-ups',
+            self::CreateFollowUps => 'Create follow-ups',
+            self::EditFollowUps => 'Edit follow-ups',
+            self::DeleteFollowUps => 'Delete follow-ups',
+            self::CompleteFollowUps => 'Complete follow-ups',
         };
     }
 
@@ -103,12 +115,14 @@ enum Permission: string
                 self::ViewActivityLog,
                 self::ViewLeads, self::CreateLeads, self::EditLeads, self::ArchiveLeads, self::ConvertLeads,
                 self::ViewCustomers, self::CreateCustomers, self::EditCustomers, self::ArchiveCustomers,
+                self::ManageFollowUps, self::ViewFollowUps, self::CreateFollowUps, self::EditFollowUps, self::DeleteFollowUps, self::CompleteFollowUps,
             ],
             RoleName::Sales->value => [
                 self::ViewProducts,
                 self::ViewPlans, self::ViewPlanPricing,
                 self::ViewLeads, self::CreateLeads, self::EditLeads, self::ConvertLeads,
                 self::ViewCustomers, self::CreateCustomers, self::EditCustomers,
+                self::ViewFollowUps, self::CreateFollowUps, self::EditFollowUps, self::CompleteFollowUps,
             ],
             RoleName::Developer->value => [
                 self::ViewProducts,
@@ -118,6 +132,7 @@ enum Permission: string
                 self::ViewProducts,
                 self::ViewPlans,
                 self::ViewCustomers,
+                self::ViewFollowUps, self::CreateFollowUps, self::EditFollowUps, self::CompleteFollowUps,
             ],
             RoleName::Qa->value => [
                 self::ViewProducts,
@@ -126,6 +141,7 @@ enum Permission: string
                 self::ViewProducts,
                 self::ViewPlans, self::ViewPlanPricing,
                 self::ViewCustomers,
+                self::ViewFollowUps,
             ],
             RoleName::Management->value => [
                 self::ViewProducts,
@@ -133,6 +149,7 @@ enum Permission: string
                 self::ViewUsers,
                 self::ViewActivityLog,
                 self::ViewLeads, self::ViewCustomers,
+                self::ViewFollowUps,
             ],
         ];
     }

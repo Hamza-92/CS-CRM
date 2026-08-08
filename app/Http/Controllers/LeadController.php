@@ -51,7 +51,7 @@ class LeadController extends Controller
     public function show(Request $request, Lead $lead): Response
     {
         abort_unless($request->user()->can('view', $lead), 403);
-        $lead->load(['owner:id,name,email,avatar_path', 'customer:id,name,business', 'statusDefinition', 'sourceDefinition']);
+        $lead->load(['owner:id,name,email,avatar_path', 'customer:id,name,business', 'statusDefinition', 'sourceDefinition', 'followUps.owner:id,name,email,avatar_path']);
 
         $products = Product::query()
             ->whereIn('id', $lead->interested_products ?? [])
@@ -61,8 +61,18 @@ class LeadController extends Controller
         return Inertia::render('leads/show', [
             'lead' => $this->payload($lead),
             'products' => $products,
+            'followUps' => $lead->followUps->sortByDesc('scheduled_at')->values()->map(fn ($followUp) => [
+                'id' => $followUp->id,
+                'reason' => $followUp->reason,
+                'scheduled_at' => $followUp->scheduled_at?->toISOString(),
+                'status' => $followUp->status,
+                'status_label' => \Illuminate\Support\Str::headline($followUp->status),
+                'is_overdue' => $followUp->isOverdue(),
+                'owner' => $followUp->owner ? ['id' => $followUp->owner->id, 'name' => $followUp->owner->name, 'email' => $followUp->owner->email, 'avatar_url' => $followUp->owner->avatar_url] : null,
+            ])->all(),
             'can' => [
                 'update' => $request->user()->can('update', $lead),
+                'create_follow_up' => $request->user()->can('create', \App\Models\FollowUp::class),
                 'archive' => $request->user()->can('delete', $lead),
                 'convert' => $request->user()->can('convert', $lead),
             ],

@@ -7,6 +7,7 @@ use App\Support\Audit\LogsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 
@@ -35,6 +36,11 @@ class Customer extends Model
     public function leads()
     {
         return $this->hasMany(Lead::class, 'customer_id');
+    }
+
+    public function followUps(): HasMany
+    {
+        return $this->hasMany(FollowUp::class);
     }
 
     public function activityDescription(string $event): ?string

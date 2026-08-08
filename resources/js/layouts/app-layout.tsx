@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     Bell,
     Boxes,
+    CalendarClock,
     ChevronDown,
     ContactRound,
     Globe2,
@@ -62,6 +63,7 @@ const groups: NavGroup[] = [
         label: 'Customer operations',
         items: [
             { label: 'Customers', href: '/customers', icon: ContactRound, ability: 'customers.view', match: (p) => p.startsWith('/customers') },
+            { label: 'Follow-ups', href: '/follow-ups', icon: CalendarClock, ability: 'follow_ups.view', match: (p) => p.startsWith('/follow-ups') },
         ],
     },
     {
