@@ -51,7 +51,7 @@ export function UserMenu() {
                 aria-expanded={open}
                 className="flex h-9 items-center gap-2 rounded-md pr-1.5 pl-1 transition-colors hover:bg-surface-3"
             >
-                <Avatar name={user.name} size="md" />
+                <Avatar name={user.name} src={user.avatar_url} size="md" />
                 <span className="hidden min-w-0 text-left sm:block">
                     <span className="block truncate text-xs leading-4 font-medium text-ink">{user.name}</span>
                     <span className="block truncate text-2xs leading-4 text-ink-3">{user.job_title ?? user.email}</span>

@@ -24,7 +24,7 @@ class DashboardController extends Controller
                 'users' => $user->can(Permission::ViewUsers->value) ? User::query()->active()->count() : null,
             ],
             'recentActivity' => $user->can(Permission::ViewActivityLog->value)
-                ? Activity::query()->with('user:id,name')->latest('created_at')->limit(10)->get()
+                ? Activity::query()->with('user:id,name,avatar_path')->latest('created_at')->limit(10)->get()
                 : [],
         ]);
     }

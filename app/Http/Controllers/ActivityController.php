@@ -15,7 +15,7 @@ class ActivityController extends Controller
         Gate::authorize('viewAny', Activity::class);
 
         $activities = Activity::query()
-            ->with('user:id,name')
+            ->with('user:id,name,avatar_path')
             ->when(
                 $request->filled('event'),
                 fn ($query) => $query->where('event', 'like', $request->string('event')->toString().'%'),

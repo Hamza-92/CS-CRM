@@ -130,7 +130,7 @@ export default function ActivityIndex({ activities, eventPrefixes, filters }: Pr
                     <ul className="divide-y divide-line/70">
                         {activities.data.map((activity) => (
                             <li key={activity.id} className="flex items-start gap-2.5 px-3.5 py-2.5">
-                                <Avatar name={activity.user?.name ?? 'System'} size="sm" className="mt-0.5" />
+                                <Avatar name={activity.user?.name ?? 'System'} src={activity.user?.avatar_url} size="sm" className="mt-0.5" />
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-1.5">
                                         <span className="text-xs text-ink">{activity.description ?? activity.event}</span>

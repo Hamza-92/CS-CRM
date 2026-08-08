@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadSourceController;
+use App\Http\Controllers\LeadStatusController;
 use App\Http\Controllers\LoginHistoryController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\ProductController;
@@ -16,6 +20,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('profile', [ProfileController::class, 'update'])->name('profile.update.upload');
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::patch('theme', [ThemeController::class, 'update'])->name('theme.update');
 
@@ -34,6 +39,36 @@ Route::middleware('auth')->group(function () {
     Route::get('products/{product}/plans', [PlanController::class, 'index'])->withTrashed()->name('products.plans.index');
     Route::get('products/{product}/plans/create', [PlanController::class, 'create'])->withTrashed()->name('products.plans.create');
     Route::post('products/{product}/plans', [PlanController::class, 'store'])->withTrashed()->name('products.plans.store');
+    Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
+    Route::get('leads/archived', [LeadController::class, 'archived'])->name('leads.archived');
+    Route::get('leads/create', [LeadController::class, 'create'])->name('leads.create');
+    Route::post('leads', [LeadController::class, 'store'])->name('leads.store');
+    Route::get('leads/{lead}', [LeadController::class, 'show'])->withTrashed()->name('leads.show');
+    Route::get('leads/{lead}/edit', [LeadController::class, 'edit'])->withTrashed()->name('leads.edit');
+    Route::put('leads/{lead}', [LeadController::class, 'update'])->withTrashed()->name('leads.update');
+    Route::post('leads/{lead}/convert', [LeadController::class, 'convert'])->name('leads.convert');
+    Route::delete('leads/{lead}', [LeadController::class, 'destroy'])->withTrashed()->name('leads.destroy');
+    Route::patch('leads/{lead}/restore', [LeadController::class, 'restore'])->withTrashed()->name('leads.restore');
+    Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
+    Route::get('lead-statuses', [LeadStatusController::class, 'index'])->name('lead-statuses.index');
+    Route::post('lead-statuses', [LeadStatusController::class, 'store'])->name('lead-statuses.store');
+    Route::put('lead-statuses/{leadStatus}', [LeadStatusController::class, 'update'])->name('lead-statuses.update');
+    Route::patch('lead-statuses/{leadStatus}/toggle', [LeadStatusController::class, 'toggle'])->name('lead-statuses.toggle');
+    Route::delete('lead-statuses/{leadStatus}', [LeadStatusController::class, 'destroy'])->name('lead-statuses.destroy');
+    Route::get('lead-sources', [LeadSourceController::class, 'index'])->name('lead-sources.index');
+    Route::post('lead-sources', [LeadSourceController::class, 'store'])->name('lead-sources.store');
+    Route::put('lead-sources/{leadSource}', [LeadSourceController::class, 'update'])->name('lead-sources.update');
+    Route::patch('lead-sources/{leadSource}/toggle', [LeadSourceController::class, 'toggle'])->name('lead-sources.toggle');
+    Route::delete('lead-sources/{leadSource}', [LeadSourceController::class, 'destroy'])->name('lead-sources.destroy');
+    Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('customers/archived', [CustomerController::class, 'archived'])->name('customers.archived');
+    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
+    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::get('customers/{customer}', [CustomerController::class, 'show'])->withTrashed()->name('customers.show');
+    Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->withTrashed()->name('customers.edit');
+    Route::put('customers/{customer}', [CustomerController::class, 'update'])->withTrashed()->name('customers.update');
+    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->withTrashed()->name('customers.destroy');
+    Route::patch('customers/{customer}/restore', [CustomerController::class, 'restore'])->withTrashed()->name('customers.restore');
     Route::get('plans/{plan}/edit', [PlanController::class, 'edit'])->name('plans.edit');
     Route::put('plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
     Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');

@@ -30,10 +30,12 @@ export function initialsOf(name: string) {
 
 export function Avatar({
     name,
+    src,
     size = 'md',
     className,
 }: {
     name: string;
+    src?: string | null;
     size?: 'xs' | 'sm' | 'md' | 'lg';
     className?: string;
 }) {
@@ -54,7 +56,7 @@ export function Avatar({
                 className,
             )}
         >
-            {initialsOf(name)}
+            {src ? <img src={src} alt="" className="size-full rounded-[inherit] object-cover" /> : initialsOf(name)}
         </span>
     );
 }

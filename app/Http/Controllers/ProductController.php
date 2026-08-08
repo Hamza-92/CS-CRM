@@ -39,7 +39,7 @@ class ProductController extends Controller
 
         $archived = $request->boolean('archived');
         $products = Product::query()
-            ->with(['technicalOwner:id,name,email', 'supportRole:id,name'])
+            ->with(['technicalOwner:id,name,email,avatar_path', 'supportRole:id,name'])
             ->search($request->string('search')->toString())
             ->when(
                 ! $archived && in_array($request->string('status')->toString(), ['active', 'inactive'], true),
@@ -197,7 +197,7 @@ class ProductController extends Controller
             : '';
 
         $products = Product::query()
-            ->with(['technicalOwner:id,name', 'supportRole:id,name'])
+            ->with(['technicalOwner:id,name,avatar_path', 'supportRole:id,name'])
             ->withCount('plans')
             ->search($request->string('search')->toString())
             ->when(
@@ -244,12 +244,12 @@ class ProductController extends Controller
     {
         Gate::authorize('view', $product);
 
-        $product->load(['technicalOwner:id,name', 'supportRole:id,name']);
+        $product->load(['technicalOwner:id,name,avatar_path', 'supportRole:id,name']);
 
         return Inertia::render('products/show', [
             'product' => $product,
             'plans' => $product->plans()->get(),
-            'activities' => $product->activities()->with('user:id,name')->limit(20)->get(),
+            'activities' => $product->activities()->with('user:id,name,avatar_path')->limit(20)->get(),
             'can' => [
                 'update' => $request->user()->can('update', $product),
                 'delete' => $request->user()->can('delete', $product),
@@ -306,7 +306,7 @@ class ProductController extends Controller
      */
     protected function owners(): Collection
     {
-        return User::query()->active()->orderBy('name')->get(['id', 'name']);
+        return User::query()->active()->orderBy('name')->get(['id', 'name', 'avatar_path']);
     }
 
     /**

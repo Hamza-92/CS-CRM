@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Camera, ImagePlus, LoaderCircle, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ interface Props {
         email: string;
         job_title: string | null;
         phone: string | null;
+        avatar_url: string | null;
         roles: string[];
         last_login_at: string | null;
         created_at: string;
@@ -24,16 +26,31 @@ interface Props {
 }
 
 function DetailsForm({ profile }: Props) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         name: profile.name,
         email: profile.email,
         job_title: profile.job_title ?? '',
         phone: profile.phone ?? '',
+        avatar: null as File | null,
+        remove_avatar: false,
     });
+    const [previewUrl, setPreviewUrl] = useState(profile.avatar_url);
+
+    useEffect(() => {
+        if (!data.avatar) {
+            setPreviewUrl(profile.avatar_url);
+            return;
+        }
+
+        const url = URL.createObjectURL(data.avatar);
+        setPreviewUrl(url);
+
+        return () => URL.revokeObjectURL(url);
+    }, [data.avatar, profile.avatar_url]);
 
     function submit(event: FormEvent) {
         event.preventDefault();
-        put('/profile', { preserveScroll: true });
+        post('/profile', { preserveScroll: true, forceFormData: true });
     }
 
     return (
@@ -67,6 +84,21 @@ function DetailsForm({ profile }: Props) {
                     <Field label="Phone" error={errors.phone}>
                         {(props) => (
                             <Input {...props} className="num" value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
+                        )}
+                    </Field>
+
+                    <Field label="Profile image" error={errors.avatar} className="sm:col-span-2">
+                        {(props) => (
+                            <div className="flex flex-wrap items-center gap-3">
+                                <label htmlFor={props.id} className="group relative flex size-14 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-line-2 bg-surface-2 text-ink-3 transition-colors hover:border-brand hover:bg-brand-wash hover:text-brand">
+                                    {previewUrl ? <img src={previewUrl} alt="Profile" className="size-full object-cover" /> : <ImagePlus className="size-5" />}
+                                    <span className="absolute inset-0 flex items-center justify-center bg-ink/55 text-white opacity-0 transition-opacity group-hover:opacity-100"><Camera className="size-4" /></span>
+                                    <input {...props} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0] ?? null; setData('avatar', file); setData('remove_avatar', false); }} />
+                                </label>
+                                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                                    {(profile.avatar_url || data.avatar) && <button type="button" className="inline-flex items-center gap-1 text-2xs font-medium text-bad hover:underline" onClick={() => { setData('avatar', null); setData('remove_avatar', true); }}><Trash2 className="size-3" />Remove</button>}
+                                </div>
+                            </div>
                         )}
                     </Field>
                 </CardBody>
@@ -163,7 +195,7 @@ export default function ProfileEdit({ profile }: Props) {
 
                 <Card className="h-fit">
                     <CardBody className="flex flex-col items-center gap-2 border-b border-line py-5 text-center">
-                        <Avatar name={profile.name} size="lg" className="size-14 text-base" />
+                        <Avatar name={profile.name} src={profile.avatar_url} size="lg" className="size-14 text-base" />
                         <div>
                             <p className="text-xs font-semibold text-ink">{profile.name}</p>
                             <p className="text-2xs text-ink-3">{profile.email}</p>

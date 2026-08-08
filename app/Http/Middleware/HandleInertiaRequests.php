@@ -34,6 +34,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'job_title' => $user->job_title,
+                    'avatar_url' => $user->avatar_path ? url('/storage/'.ltrim($user->avatar_path, '/')) : null,
                     'roles' => $user->getRoleNames()->all(),
                 ] : null,
                 'can' => $this->abilities($request),

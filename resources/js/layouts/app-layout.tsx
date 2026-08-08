@@ -2,12 +2,17 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     Bell,
     Boxes,
+    ChevronDown,
+    ContactRound,
+    Globe2,
     KeyRound,
     PanelLeftClose,
     PanelLeftOpen,
     Search,
     Moon,
     Sun,
+    Tag,
+    UserRoundSearch,
     Users,
     X,
     type LucideIcon,
@@ -35,6 +40,8 @@ interface NavItem {
 interface NavGroup {
     label: string;
     items: NavItem[];
+    icon?: LucideIcon;
+    collapsible?: boolean;
 }
 
 const groups: NavGroup[] = [
@@ -51,6 +58,22 @@ const groups: NavGroup[] = [
             { label: 'Roles & Permissions', href: '/roles', icon: KeyRound, ability: 'roles.manage', match: (p) => p.startsWith('/roles') },
         ],
     },
+    {
+        label: 'Customer operations',
+        items: [
+            { label: 'Customers', href: '/customers', icon: ContactRound, ability: 'customers.view', match: (p) => p.startsWith('/customers') },
+        ],
+    },
+    {
+        label: 'Lead Management',
+        icon: UserRoundSearch,
+        collapsible: true,
+        items: [
+            { label: 'Leads', href: '/leads', icon: UserRoundSearch, ability: 'leads.view', match: (p) => p.startsWith('/leads') },
+            { label: 'Lead Sources', href: '/lead-sources', icon: Globe2, ability: 'leads.manage', match: (p) => p.startsWith('/lead-sources') },
+            { label: 'Lead Status', href: '/lead-statuses', icon: Tag, ability: 'leads.manage', match: (p) => p.startsWith('/lead-statuses') },
+        ],
+    },
 ];
 
 function Rail({
@@ -65,6 +88,7 @@ function Rail({
     const { can } = useAuth();
     const page = usePage<SharedProps>();
     const appName = page.props.app.name;
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ 'Lead Management': path.startsWith('/leads') || path.startsWith('/lead-') });
 
     const visible = groups
         .map((group) => ({ ...group, items: group.items.filter((item) => !item.ability || can(item.ability)) }))
@@ -91,9 +115,13 @@ function Rail({
             >
                 {visible.map((group) => (
                     <div key={group.label}>
-                        {!collapsed && <p className="eyebrow mb-1.5 px-2.5 text-rail-ink-3">{group.label}</p>}
-                        <div className="space-y-0.5">
-                            {group.items.map((item) => {
+                        {(() => {
+                            const groupActive = group.items.some((item) => item.match(path));
+                            const expanded = !group.collapsible || openGroups[group.label] || groupActive;
+                            const GroupIcon = group.icon;
+                            return <>
+                                {!collapsed && (group.collapsible ? <button type="button" onClick={() => setOpenGroups((current) => ({ ...current, [group.label]: !expanded }))} className={cn('mb-1.5 flex w-full items-center gap-2 px-2.5 text-left text-xs font-semibold transition-colors', groupActive ? 'text-brand' : 'text-rail-ink-3')}>{GroupIcon && <GroupIcon className="size-4" />}<span className="flex-1">{group.label}</span><ChevronDown className={cn('size-3.5 transition-transform', expanded && 'rotate-180')} /></button> : <p className="eyebrow mb-1.5 px-2.5 text-rail-ink-3">{group.label}</p>)}
+                                {(expanded || collapsed) && <div className={cn('space-y-0.5', !collapsed && group.collapsible && 'ml-3.5 border-l border-line pl-2.5')}>{group.items.map((item) => {
                                 const active = item.match(path);
 
                                 return (
@@ -130,8 +158,9 @@ function Rail({
                                         )}
                                     </Link>
                                 );
-                            })}
-                        </div>
+                            })}</div>}
+                            </>;
+                        })()}
                     </div>
                 ))}
             </nav>

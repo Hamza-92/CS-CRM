@@ -277,7 +277,7 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
 
                                         <td className="px-3">
                                             <div className="flex items-center gap-2.5">
-                                                <Avatar name={user.name} size="lg" className="size-10" />
+                                                <Avatar name={user.name} src={user.avatar_url} size="lg" className="size-10" />
                                                 <div className="min-w-0">
                                                     <p className="truncate text-xs font-medium text-ink">{user.name}</p>
                                                     <p className="truncate text-xs text-ink-3">{user.email}</p>
@@ -407,7 +407,7 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                         {users.data.map((user) => (
                             <Card key={user.id} className="p-4 transition-shadow duration-200 hover:shadow-pop">
                                 <div className="flex items-center gap-3">
-                                    <Avatar name={user.name} size="lg" className="size-12 rounded-lg text-sm" />
+                                    <Avatar name={user.name} src={user.avatar_url} size="lg" className="size-12 rounded-lg text-sm" />
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-xs font-semibold text-ink">{user.name}</p>
                                         <p className="truncate text-2xs text-ink-3">{user.email}</p>

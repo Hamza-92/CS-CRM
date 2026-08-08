@@ -14,10 +14,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'is_active', 'job_title', 'phone'])]
+#[Fillable(['name', 'email', 'password', 'is_active', 'job_title', 'phone', 'avatar_path'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
+    protected $appends = ['avatar_url'];
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, LogsActivity, Notifiable, SoftDeletes;
 
@@ -37,6 +39,11 @@ class User extends Authenticatable
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar_path ? url('/storage/'.ltrim($this->avatar_path, '/')) : null;
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

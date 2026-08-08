@@ -3,6 +3,7 @@ export interface AuthUser {
     name: string;
     email: string;
     job_title: string | null;
+    avatar_url: string | null;
     roles: string[];
 }
 
@@ -30,7 +31,18 @@ export type Ability =
     | 'roles.create'
     | 'roles.edit'
     | 'roles.delete'
-    | 'activity_log.view';
+    | 'activity_log.view'
+    | 'leads.manage'
+    | 'leads.view'
+    | 'leads.create'
+    | 'leads.edit'
+    | 'leads.archive'
+    | 'leads.convert'
+    | 'customers.manage'
+    | 'customers.view'
+    | 'customers.create'
+    | 'customers.edit'
+    | 'customers.archive';
 
 export interface SharedProps {
     app: { name: string; theme: 'light' | 'dark' };
@@ -73,7 +85,63 @@ export interface UserRef {
     id: number;
     name: string;
     email?: string;
+    avatar_url?: string | null;
     roles?: RoleRef[];
+}
+
+export interface ProductRef {
+    id: number;
+    name: string;
+    code: string;
+}
+
+export interface Lead {
+    id: number;
+    name: string;
+    business: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+    email: string | null;
+    city: string | null;
+    source: string | null;
+    source_label: string | null;
+    status: string;
+    status_label: string;
+    status_color?: string;
+    owner_id: number | null;
+    owner: UserRef | null;
+    interested_products: number[];
+    next_follow_up_at: string | null;
+    notes: string | null;
+    customer_id: number | null;
+    customer: { id: number; name: string; business: string | null } | null;
+    converted_at: string | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+}
+
+export interface Customer {
+    id: number;
+    name: string;
+    business: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+    email: string | null;
+    city: string | null;
+    source: string | null;
+    source_label: string | null;
+    status: 'active' | 'inactive';
+    owner_id: number | null;
+    owner: UserRef | null;
+    tags: string[];
+    notes: string | null;
+    last_contacted_at: string | null;
+    converted_from_lead_id: number | null;
+    leads_count: number;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
 }
 
 export interface RoleOption {
@@ -162,6 +230,7 @@ export interface ManagedUser {
     email: string;
     job_title: string | null;
     phone: string | null;
+    avatar_url: string | null;
     is_active: boolean;
     last_login_at: string | null;
     created_at: string;

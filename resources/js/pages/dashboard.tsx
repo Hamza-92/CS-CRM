@@ -90,7 +90,7 @@ export default function Dashboard({ stats, recentActivity }: Props) {
                         <ul className="divide-y divide-line/70">
                             {recentActivity.map((activity) => (
                                 <li key={activity.id} className="flex items-center gap-2.5 px-3.5 py-1.5">
-                                    <Avatar name={activity.user?.name ?? 'System'} size="xs" />
+                                    <Avatar name={activity.user?.name ?? 'System'} src={activity.user?.avatar_url} size="xs" />
                                     <p className="min-w-0 flex-1 truncate text-xs text-ink">
                                         {activity.description ?? activity.event}
                                     </p>

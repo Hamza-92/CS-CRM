@@ -38,7 +38,7 @@ export function ViewUserModal({
             {user && (
                 <div>
                     <div className="flex items-center gap-3 border-b border-line pb-4">
-                        <Avatar name={user.name} size="lg" className="size-11 text-sm" />
+                        <Avatar name={user.name} src={user.avatar_url} size="lg" className="size-11 text-sm" />
                         <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
                             <p className="truncate text-2xs text-ink-3">{user.email}</p>

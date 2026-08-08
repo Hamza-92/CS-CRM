@@ -108,7 +108,7 @@ export function ProductsTable({
             accessorKey: 'technical_owner',
             header: 'Owner',
             cell: ({ row }: { row: { original: Product } }) => row.original.technical_owner ? (
-                <span className="flex items-center gap-1.5"><Avatar name={row.original.technical_owner.name} size="xs" /><span className="truncate text-xs text-ink-2">{row.original.technical_owner.name}</span></span>
+                <span className="flex items-center gap-1.5"><Avatar name={row.original.technical_owner.name} src={row.original.technical_owner.avatar_url} size="xs" /><span className="truncate text-xs text-ink-2">{row.original.technical_owner.name}</span></span>
             ) : <span className="text-2xs text-ink-3">Unassigned</span>,
         },
         {
