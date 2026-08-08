@@ -20,7 +20,7 @@ class LoginHistoryController extends Controller
             : 10;
 
         $loginHistory = Activity::query()
-            ->with(['user:id,name,email', 'user.roles:id,name'])
+            ->with(['user:id,name,email,avatar_path', 'user.roles:id,name'])
             ->where('event', 'auth.login')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {

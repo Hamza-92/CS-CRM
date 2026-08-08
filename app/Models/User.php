@@ -43,7 +43,12 @@ class User extends Authenticatable
 
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar_path ? url('/storage/'.ltrim($this->avatar_path, '/')) : null;
+        // Some relationship queries intentionally select only a small user
+        // projection. Reading a non-selected attribute throws when Laravel's
+        // missing-attribute protection is enabled, so treat it as unavailable.
+        $path = $this->attributes['avatar_path'] ?? null;
+
+        return $path ? url('/storage/'.ltrim($path, '/')) : null;
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
