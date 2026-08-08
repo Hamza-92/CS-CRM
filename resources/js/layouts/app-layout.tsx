@@ -5,10 +5,12 @@ import {
     CalendarClock,
     ChevronDown,
     ContactRound,
+    CreditCard,
     Globe2,
     Handshake,
     GitBranch,
     KeyRound,
+    LifeBuoy,
     PanelLeftClose,
     PanelLeftOpen,
     ReceiptText,
@@ -68,6 +70,8 @@ const groups: NavGroup[] = [
             { label: 'Customers', href: '/customers', icon: ContactRound, ability: 'customers.view', match: (p) => p.startsWith('/customers') },
             { label: 'Instances', href: '/instances', icon: Boxes, ability: 'instances.view', match: (p) => p.startsWith('/instances') },
             { label: 'Subscriptions', href: '/subscriptions', icon: ReceiptText, ability: 'subscriptions.view', match: (p) => p.startsWith('/subscriptions') },
+            { label: 'Payments', href: '/payments', icon: CreditCard, ability: 'payments.view', match: (p) => p.startsWith('/payments') },
+            { label: 'Support Tickets', href: '/support-tickets', icon: LifeBuoy, ability: 'support_tickets.view', match: (p) => p.startsWith('/support-tickets') },
             { label: 'Follow-ups', href: '/follow-ups', icon: CalendarClock, ability: 'follow_ups.view', match: (p) => p.startsWith('/follow-ups') },
         ],
     },
@@ -181,11 +185,6 @@ function Rail({
                 ))}
             </nav>
 
-            {!collapsed && (
-                <div className="shrink-0 border-t border-rail-line px-4 py-2.5">
-                    <p className="text-2xs text-rail-ink-3">Phase 1 · Foundation</p>
-                </div>
-            )}
         </div>
     );
 }

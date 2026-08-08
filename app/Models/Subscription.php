@@ -6,6 +6,7 @@ use App\Support\Audit\LogsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 
@@ -31,6 +32,7 @@ class Subscription extends Model
 
     public function applicationInstance(): BelongsTo { return $this->belongsTo(ApplicationInstance::class); }
     public function plan(): BelongsTo { return $this->belongsTo(Plan::class); }
+    public function payments(): HasMany { return $this->hasMany(Payment::class); }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {

@@ -64,7 +64,17 @@ export type Ability =
     | 'subscriptions.view'
     | 'subscriptions.create'
     | 'subscriptions.edit'
-    | 'subscriptions.archive';
+    | 'subscriptions.archive'
+    | 'payments.manage'
+    | 'payments.view'
+    | 'payments.create'
+    | 'payments.edit'
+    | 'payments.archive'
+    | 'support_tickets.manage'
+    | 'support_tickets.view'
+    | 'support_tickets.create'
+    | 'support_tickets.edit'
+    | 'support_tickets.archive';
 
 export interface SharedProps {
     app: { name: string; theme: 'light' | 'dark' };
@@ -338,6 +348,53 @@ export interface Subscription {
     is_expired?: boolean;
     application_instance: ApplicationInstance | null;
     plan: Plan | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+}
+
+export interface Payment {
+    id: number;
+    subscription_id: number;
+    invoice_number: string;
+    amount: string;
+    currency: string;
+    status: 'pending' | 'paid' | 'failed' | 'refunded' | 'void';
+    status_label?: string;
+    method: string | null;
+    method_label?: string | null;
+    due_at: string | null;
+    paid_at: string | null;
+    reference: string | null;
+    notes: string | null;
+    subscription: Subscription | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+}
+
+export interface SupportTicket {
+    id: number;
+    customer_id: number;
+    application_instance_id: number | null;
+    assigned_to_id: number | null;
+    created_by_id: number | null;
+    ticket_number: string;
+    subject: string;
+    description: string;
+    category: string;
+    category_label?: string;
+    priority: 'low' | 'normal' | 'high' | 'urgent';
+    priority_label?: string;
+    status: 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed';
+    status_label?: string;
+    due_at: string | null;
+    resolved_at: string | null;
+    closed_at: string | null;
+    is_overdue?: boolean;
+    customer: { id: number; name: string; business: string | null; email?: string | null } | null;
+    application_instance: ApplicationInstance | null;
+    assigned_to?: UserRef | null;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;

@@ -1,0 +1,9 @@
+import { Head, Link, router } from '@inertiajs/react';
+import { ArchiveRestore, ArrowLeft, Eye } from 'lucide-react';
+import { PageHeader } from '@/components/page-header';
+import { Pagination } from '@/components/pagination';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
+import type { Paginated, Payment } from '@/types';
+export default function ArchivedPayments({ payments }: { payments: Paginated<Payment> }) { return <AppLayout><Head title="Archived payments" /><PageHeader title="Archived payments" actions={<Link href="/payments"><Button variant="secondary"><ArrowLeft /> Back to Payments</Button></Link>} /><Card className="overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-line bg-surface-2 text-xs uppercase tracking-wider text-ink-3"><tr><th className="px-4 py-3">Invoice</th><th className="px-4 py-3">Subscription</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Actions</th></tr></thead><tbody className="divide-y divide-line">{payments.data.map((payment) => <tr key={payment.id}><td className="px-4 py-3 font-semibold text-ink">{payment.invoice_number}</td><td className="px-4 py-3 text-ink-2">{payment.subscription?.plan?.name}</td><td className="num px-4 py-3 text-ink-2">{payment.currency} {Number(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td><td className="px-4 py-3"><div className="flex justify-end gap-1"><Link href={`/payments/${payment.id}`}><Button variant="ghost" size="icon" aria-label="View payment"><Eye /></Button></Link><Button variant="ghost" size="icon" aria-label="Restore payment" onClick={() => router.patch(`/payments/${payment.id}/restore`)}><ArchiveRestore /></Button></div></td></tr>)}</tbody></table></div><Pagination meta={payments} perPage={payments.per_page} /></Card></AppLayout>; }
