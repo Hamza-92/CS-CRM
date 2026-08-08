@@ -70,6 +70,11 @@ class Plan extends Model
         return $this->hasMany(Deal::class);
     }
 
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);

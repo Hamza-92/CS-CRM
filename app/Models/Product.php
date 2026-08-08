@@ -58,6 +58,11 @@ class Product extends Model
         return $this->hasMany(Deal::class);
     }
 
+    public function instances(): HasMany
+    {
+        return $this->hasMany(ApplicationInstance::class);
+    }
+
     public function technicalOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'technical_owner_id');

@@ -15,7 +15,7 @@ class FollowUp extends Model
     public const STATUSES = ['pending', 'completed', 'rescheduled', 'cancelled'];
 
     protected $fillable = [
-        'lead_id', 'customer_id', 'deal_id', 'reason', 'notes', 'owner_id', 'scheduled_at', 'status',
+        'lead_id', 'customer_id', 'deal_id', 'application_instance_id', 'reason', 'notes', 'owner_id', 'scheduled_at', 'status',
         'completed_at', 'completed_by_id', 'created_by_id',
     ];
 
@@ -30,6 +30,7 @@ class FollowUp extends Model
     public function lead(): BelongsTo { return $this->belongsTo(Lead::class); }
     public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
     public function deal(): BelongsTo { return $this->belongsTo(Deal::class); }
+    public function applicationInstance(): BelongsTo { return $this->belongsTo(ApplicationInstance::class); }
     public function owner(): BelongsTo { return $this->belongsTo(User::class, 'owner_id'); }
     public function completedBy(): BelongsTo { return $this->belongsTo(User::class, 'completed_by_id'); }
     public function createdBy(): BelongsTo { return $this->belongsTo(User::class, 'created_by_id'); }
@@ -42,7 +43,8 @@ class FollowUp extends Model
             $query->where('reason', 'like', "%{$term}%")
                 ->orWhere('notes', 'like', "%{$term}%")
                 ->orWhereHas('lead', fn (Builder $lead) => $lead->where('name', 'like', "%{$term}%")->orWhere('business', 'like', "%{$term}%"))
-                ->orWhereHas('customer', fn (Builder $customer) => $customer->where('name', 'like', "%{$term}%")->orWhere('business', 'like', "%{$term}%"));
+                ->orWhereHas('customer', fn (Builder $customer) => $customer->where('name', 'like', "%{$term}%")->orWhere('business', 'like', "%{$term}%"))
+                ->orWhereHas('applicationInstance', fn (Builder $instance) => $instance->where('name', 'like', "%{$term}%"));
         });
     }
 
@@ -58,7 +60,7 @@ class FollowUp extends Model
 
     public function subjectName(): string
     {
-        return $this->deal?->title ?? $this->lead?->name ?? $this->customer?->name ?? 'Unlinked record';
+        return $this->deal?->title ?? $this->lead?->name ?? $this->customer?->name ?? $this->applicationInstance?->name ?? 'Unlinked record';
     }
 
     public function activityDescription(string $event): ?string

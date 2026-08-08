@@ -48,6 +48,11 @@ class Customer extends Model
         return $this->hasMany(Deal::class);
     }
 
+    public function instances(): HasMany
+    {
+        return $this->hasMany(ApplicationInstance::class);
+    }
+
     public function activityDescription(string $event): ?string
     {
         return "Customer {$this->name} {$event}";

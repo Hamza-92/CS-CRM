@@ -11,6 +11,7 @@ import {
     KeyRound,
     PanelLeftClose,
     PanelLeftOpen,
+    ReceiptText,
     Search,
     Moon,
     Sun,
@@ -65,6 +66,8 @@ const groups: NavGroup[] = [
         label: 'Customer operations',
         items: [
             { label: 'Customers', href: '/customers', icon: ContactRound, ability: 'customers.view', match: (p) => p.startsWith('/customers') },
+            { label: 'Instances', href: '/instances', icon: Boxes, ability: 'instances.view', match: (p) => p.startsWith('/instances') },
+            { label: 'Subscriptions', href: '/subscriptions', icon: ReceiptText, ability: 'subscriptions.view', match: (p) => p.startsWith('/subscriptions') },
             { label: 'Follow-ups', href: '/follow-ups', icon: CalendarClock, ability: 'follow_ups.view', match: (p) => p.startsWith('/follow-ups') },
         ],
     },

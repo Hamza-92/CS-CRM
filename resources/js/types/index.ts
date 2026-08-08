@@ -54,7 +54,17 @@ export type Ability =
     | 'deals.create'
     | 'deals.edit'
     | 'deals.archive'
-    | 'deal_stages.manage';
+    | 'deal_stages.manage'
+    | 'instances.manage'
+    | 'instances.view'
+    | 'instances.create'
+    | 'instances.edit'
+    | 'instances.archive'
+    | 'subscriptions.manage'
+    | 'subscriptions.view'
+    | 'subscriptions.create'
+    | 'subscriptions.edit'
+    | 'subscriptions.archive';
 
 export interface SharedProps {
     app: { name: string; theme: 'light' | 'dark' };
@@ -105,6 +115,32 @@ export interface ProductRef {
     id: number;
     name: string;
     code: string;
+}
+
+export interface ApplicationInstance {
+    id: number;
+    customer_id: number;
+    product_id: number;
+    owner_id: number | null;
+    name: string;
+    environment: 'demo' | 'staging' | 'production' | 'sandbox';
+    environment_label?: string;
+    status: 'planned' | 'active' | 'paused' | 'retired';
+    status_label?: string;
+    deployment_url: string | null;
+    server_name: string | null;
+    version: string | null;
+    deployed_at: string | null;
+    last_checked_at: string | null;
+    notes: string | null;
+    customer: { id: number; name: string; business: string | null; email?: string | null } | null;
+    product: { id: number; name: string; code: string; brand_color?: string | null } | null;
+    owner: UserRef | null;
+    follow_ups_count?: number;
+    subscriptions?: Array<{ id: number; status: string; status_label?: string; kind: string; ends_at: string | null; renewal_at: string | null; plan?: { id: number; name: string; code: string } | null }>;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
 }
 
 export interface Lead {
@@ -161,6 +197,7 @@ export interface FollowUp {
     lead_id: number | null;
     customer_id: number | null;
     deal_id: number | null;
+    application_instance_id: number | null;
     reason: string;
     notes: string | null;
     owner_id: number | null;
@@ -170,7 +207,7 @@ export interface FollowUp {
     status_label: string;
     is_overdue: boolean;
     completed_at: string | null;
-    subject: { id: number; name: string; business: string | null; type: 'lead' | 'customer' | 'deal' } | null;
+    subject: { id: number; name: string; business: string | null; type: 'lead' | 'customer' | 'deal' | 'instance' } | null;
     created_at: string;
     updated_at: string;
 }
@@ -278,6 +315,31 @@ export interface Plan {
     grace_days: number;
     is_active: boolean;
     sort_order: number;
+    deleted_at: string | null;
+}
+
+export interface Subscription {
+    id: number;
+    application_instance_id: number;
+    plan_id: number;
+    kind: 'trial' | 'subscription';
+    kind_label?: string;
+    status: 'trialing' | 'active' | 'past_due' | 'paused' | 'expired' | 'cancelled';
+    status_label?: string;
+    starts_at: string;
+    ends_at: string | null;
+    renewal_at: string | null;
+    grace_ends_at: string | null;
+    cancelled_at: string | null;
+    auto_renew: boolean;
+    external_reference: string | null;
+    notes: string | null;
+    days_remaining?: number | null;
+    is_expired?: boolean;
+    application_instance: ApplicationInstance | null;
+    plan: Plan | null;
+    created_at: string;
+    updated_at: string;
     deleted_at: string | null;
 }
 
