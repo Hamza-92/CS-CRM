@@ -1,11 +1,13 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArchiveRestore, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArchiveRestore, ArrowLeft, Layers, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { useState } from 'react';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge, StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
+import { Modal } from '@/components/ui/modal';
 import AppLayout from '@/layouts/app-layout';
 import type { Activity, Plan, Product } from '@/types';
 import { dateTime, money, relativeTime, toneForCycle, toneForEvent } from '@/lib/format';
@@ -27,13 +29,14 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 }
 
 export default function ProductShow({ product, plans, activities, can }: Props) {
+    const [archiveOpen, setArchiveOpen] = useState(false);
+
     return (
         <AppLayout>
             <Head title={product.name} />
 
             <PageHeader
                 title={product.name}
-                breadcrumbs={[{ label: 'Products', href: '/products' }, { label: product.name }]}
                 badge={
                     product.deleted_at ? (
                         <Badge tone="warn" size="sm">
@@ -47,7 +50,11 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                 }
                 actions={
                     <>
-                        {can.update && (
+                        <Button variant="secondary" onClick={() => router.visit('/products')}>
+                            <ArrowLeft />
+                            Back to Products
+                        </Button>
+                        {can.update && !product.deleted_at && (
                             <Link href={`/products/${product.id}/edit`}>
                                 <Button variant="secondary">
                                     <Pencil />
@@ -56,16 +63,7 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                             </Link>
                         )}
                         {can.delete && !product.deleted_at && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Archive product"
-                                onClick={() => {
-                                    if (confirm(`Archive ${product.name}?`)) {
-                                        router.delete(`/products/${product.id}`);
-                                    }
-                                }}
-                            >
+                            <Button variant="ghost" size="icon" aria-label="Archive product" onClick={() => setArchiveOpen(true)}>
                                 <Trash2 />
                             </Button>
                         )}
@@ -86,7 +84,7 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                             title="Plans"
                             meta={plans.length > 0 ? `${plans.length}` : undefined}
                             action={
-                                can.managePlans && (
+                                can.managePlans && !product.deleted_at && (
                                     <Link href={`/products/${product.id}/plans/create`}>
                                         <Button size="sm" variant="secondary">
                                             <Plus />
@@ -103,7 +101,7 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                                     title="No plans yet"
                                     description="A product needs a plan before it can be sold or trialled."
                                     action={
-                                        can.managePlans && (
+                                        can.managePlans && !product.deleted_at && (
                                             <Link href={`/products/${product.id}/plans/create`}>
                                                 <Button size="sm">
                                                     <Plus />
@@ -116,14 +114,14 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                             </CardBody>
                         ) : (
                             <table className="w-full border-collapse">
-                                <thead className="bg-surface-2">
+                                <thead className="bg-[#F0F0F1]">
                                     <tr className="border-b border-line">
-                                        <th className="eyebrow h-9 px-3.5 text-left text-ink-3">Plan</th>
-                                        <th className="eyebrow h-9 px-3 text-left text-ink-3">Cycle</th>
-                                        <th className="eyebrow h-9 px-3 text-left text-ink-3">Duration</th>
-                                        <th className="eyebrow h-9 px-3 text-left text-ink-3">Grace</th>
-                                        {can.viewPricing && <th className="eyebrow h-9 px-3 text-right text-ink-3">Price</th>}
-                                        <th className="h-9 w-10 px-3.5" />
+                                        <th className="h-10 px-3.5 text-left text-xs font-semibold text-ink-2">Plan</th>
+                                        <th className="h-10 px-3 text-left text-xs font-semibold text-ink-2">Cycle</th>
+                                        <th className="h-10 px-3 text-left text-xs font-semibold text-ink-2">Duration</th>
+                                        <th className="h-10 px-3 text-left text-xs font-semibold text-ink-2">Grace</th>
+                                        {can.viewPricing && <th className="h-10 px-3 text-right text-xs font-semibold text-ink-2">Price</th>}
+                                        <th className="h-10 w-10 px-3.5" />
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -132,7 +130,7 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                                             key={plan.id}
                                             className="border-b border-line/70 transition-colors last:border-b-0 hover:bg-surface-2"
                                         >
-                                            <td className="h-12 px-3.5">
+                                            <td className="h-[60px] px-3.5">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs font-medium text-ink">{plan.name}</span>
                                                     <span className="num text-2xs text-ink-3">{plan.code}</span>
@@ -158,7 +156,7 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                                                 </td>
                                             )}
                                             <td className="px-3.5 text-right">
-                                                {can.managePlans && (
+                                                {can.managePlans && !product.deleted_at && (
                                                     <Link href={`/plans/${plan.id}/edit`}>
                                                         <Button variant="ghost" size="icon-sm" aria-label={`Edit ${plan.name}`}>
                                                             <Pencil />
@@ -251,18 +249,48 @@ export default function ProductShow({ product, plans, activities, can }: Props) 
                         </Card>
                     )}
 
-                    {product.demo_notes && (
-                        <Card>
-                            <CardHeader title="Setup notes" />
-                            <CardBody>
-                                <p className="text-xs leading-relaxed whitespace-pre-line text-ink-2">
-                                    {product.demo_notes}
-                                </p>
-                            </CardBody>
-                        </Card>
-                    )}
+                    <Card>
+                        <CardHeader title="Setup notes" />
+                        <CardBody>
+                            <p className={product.demo_notes ? 'text-xs leading-relaxed whitespace-pre-line text-ink-2' : 'text-xs text-ink-3'}>
+                                {product.demo_notes || 'No setup notes added.'}
+                            </p>
+                        </CardBody>
+                    </Card>
                 </div>
             </div>
+
+            <Modal
+                open={archiveOpen}
+                onClose={() => setArchiveOpen(false)}
+                title="Archive product"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setArchiveOpen(false)}>Cancel</Button>
+                        <Button
+                            variant="danger"
+                            onClick={() => {
+                                setArchiveOpen(false);
+                                router.delete(`/products/${product.id}`);
+                            }}
+                        >
+                            Archive product
+                        </Button>
+                    </>
+                }
+            >
+                <div className="flex gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-warn-wash text-warn">
+                        <TriangleAlert className="size-4" />
+                    </span>
+                    <div>
+                        <p className="text-xs font-medium text-ink">Archive {product.name}?</p>
+                        <p className="mt-1 text-2xs leading-5 text-ink-2">
+                            The product will be hidden from the active catalogue. Its plans and history will remain available.
+                        </p>
+                    </div>
+                </div>
+            </Modal>
         </AppLayout>
     );
 }

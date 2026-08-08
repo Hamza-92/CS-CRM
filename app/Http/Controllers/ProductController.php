@@ -17,37 +17,53 @@ use Spatie\Permission\Models\Role;
 
 class ProductController extends Controller
 {
-    private const SORTABLE = ['name', 'code', 'is_active', 'created_at'];
+    private const SORTABLE = ['name', 'code', 'is_active', 'created_at', 'deleted_at'];
 
     public function index(Request $request): Response
+    {
+        return $this->listing($request, false);
+    }
+
+    public function archived(Request $request): Response
+    {
+        return $this->listing($request, true);
+    }
+
+    private function listing(Request $request, bool $archived): Response
     {
         Gate::authorize('viewAny', Product::class);
 
         $sort = $request->string('sort', 'name')->toString();
         $sort = in_array($sort, self::SORTABLE, true) ? $sort : 'name';
         $direction = $request->string('direction', 'asc')->toString() === 'desc' ? 'desc' : 'asc';
+        $perPage = in_array($request->integer('per_page', 10), [10, 25, 50, 100], true)
+            ? $request->integer('per_page', 10)
+            : 10;
+        $status = ! $archived && in_array($request->string('status')->toString(), ['active', 'inactive'], true)
+            ? $request->string('status')->toString()
+            : '';
 
         $products = Product::query()
             ->with(['technicalOwner:id,name', 'supportRole:id,name'])
             ->withCount('plans')
             ->search($request->string('search')->toString())
             ->when(
-                $request->filled('status'),
-                fn ($query) => $query->where('is_active', $request->string('status')->toString() === 'active'),
+                $status !== '',
+                fn ($query) => $query->where('is_active', $status === 'active'),
             )
-            ->when($request->boolean('archived'), fn ($query) => $query->onlyTrashed())
+            ->when($archived, fn ($query) => $query->onlyTrashed())
             ->orderBy($sort, $direction)
-            ->paginate($request->integer('per_page', 15))
+            ->paginate($perPage)
             ->withQueryString();
 
-        return Inertia::render('products/index', [
+        return Inertia::render($archived ? 'products/archived' : 'products/index', [
             'products' => $products,
             'filters' => [
                 'search' => $request->string('search')->toString(),
-                'status' => $request->string('status')->toString(),
-                'archived' => $request->boolean('archived'),
                 'sort' => $sort,
                 'direction' => $direction,
+                'per_page' => $perPage,
+                ...(! $archived ? ['status' => $status] : []),
             ],
         ]);
     }

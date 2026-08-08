@@ -1,6 +1,8 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { PlanForm } from '@/components/plans/plan-form';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import type { BillingCycleOption } from '@/types';
 
@@ -18,14 +20,10 @@ export default function PlanCreate({ product, billingCycles, currencies, default
 
             <PageHeader
                 title="New plan"
-                breadcrumbs={[
-                    { label: 'Products', href: '/products' },
-                    { label: product.name, href: `/products/${product.id}` },
-                    { label: 'New plan' },
-                ]}
+                actions={<Button variant="secondary" onClick={() => router.visit(`/products/${product.id}`)}><ArrowLeft /> Back to Product</Button>}
             />
 
-            <div className="max-w-3xl">
+            <div className="w-full">
                 <PlanForm
                     productId={product.id}
                     billingCycles={billingCycles}

@@ -3,7 +3,8 @@ import { LoaderCircle } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardFooter, CardHeader } from '@/components/ui/card';
-import { Field, Input, Select, Toggle } from '@/components/ui/field';
+import { Field, Input, Toggle } from '@/components/ui/field';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import type { BillingCycleOption, Plan } from '@/types';
 
 interface PlanFormValues {
@@ -50,6 +51,8 @@ export function PlanForm({
     });
 
     const isLifetime = data.billing_cycle === 'lifetime';
+    const cycleOptions = billingCycles.map((option) => ({ value: option.value, label: option.label }));
+    const currencyOptions = currencies.map((currency) => ({ value: currency, label: currency }));
 
     function onCycleChange(value: string) {
         const cycle = billingCycles.find((option) => option.value === value);
@@ -105,13 +108,16 @@ export function PlanForm({
 
                     <Field label="Billing cycle" error={errors.billing_cycle} required className="sm:col-span-2">
                         {(props) => (
-                            <Select {...props} value={data.billing_cycle} onChange={(e) => onCycleChange(e.target.value)}>
-                                {billingCycles.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </Select>
+                            <SearchableSelect
+                                id={props.id}
+                                invalid={props['aria-invalid']}
+                                describedBy={props['aria-describedby']}
+                                options={cycleOptions}
+                                value={data.billing_cycle}
+                                onChange={onCycleChange}
+                                placeholder="Select billing cycle"
+                                searchPlaceholder="Search cycles..."
+                            />
                         )}
                     </Field>
 
@@ -156,13 +162,16 @@ export function PlanForm({
 
                     <Field label="Currency" error={errors.currency} required>
                         {(props) => (
-                            <Select {...props} value={data.currency} onChange={(e) => setData('currency', e.target.value)}>
-                                {currencies.map((currency) => (
-                                    <option key={currency} value={currency}>
-                                        {currency}
-                                    </option>
-                                ))}
-                            </Select>
+                            <SearchableSelect
+                                id={props.id}
+                                invalid={props['aria-invalid']}
+                                describedBy={props['aria-describedby']}
+                                options={currencyOptions}
+                                value={data.currency}
+                                onChange={(value) => setData('currency', value)}
+                                placeholder="Select currency"
+                                searchPlaceholder="Search currencies..."
+                            />
                         )}
                     </Field>
 

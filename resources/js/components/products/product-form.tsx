@@ -3,7 +3,8 @@ import { LoaderCircle } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardFooter, CardHeader } from '@/components/ui/card';
-import { Field, Input, Select, Textarea, Toggle } from '@/components/ui/field';
+import { Field, Input, Textarea, Toggle } from '@/components/ui/field';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import type { Product, RoleRef, UserRef } from '@/types';
 
 interface ProductFormValues {
@@ -42,6 +43,15 @@ export function ProductForm({
         default_trial_days: product?.default_trial_days ? String(product.default_trial_days) : '',
         demo_notes: product?.demo_notes ?? '',
     });
+
+    const ownerOptions = [
+        { value: '', label: 'Unassigned' },
+        ...owners.map((owner) => ({ value: String(owner.id), label: owner.name, hint: owner.email })),
+    ];
+    const supportRoleOptions = [
+        { value: '', label: 'Unassigned' },
+        ...roles.map((role) => ({ value: String(role.id), label: role.name.replace(/_/g, ' ') })),
+    ];
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -98,35 +108,31 @@ export function ProductForm({
                 <CardBody className="grid gap-4 sm:grid-cols-2">
                     <Field label="Technical owner" error={errors.technical_owner_id}>
                         {(props) => (
-                            <Select
-                                {...props}
+                            <SearchableSelect
+                                id={props.id}
+                                invalid={props['aria-invalid']}
+                                describedBy={props['aria-describedby']}
+                                options={ownerOptions}
                                 value={data.technical_owner_id}
-                                onChange={(e) => setData('technical_owner_id', e.target.value)}
-                            >
-                                <option value="">Unassigned</option>
-                                {owners.map((owner) => (
-                                    <option key={owner.id} value={owner.id}>
-                                        {owner.name}
-                                    </option>
-                                ))}
-                            </Select>
+                                onChange={(value) => setData('technical_owner_id', value)}
+                                placeholder="Unassigned"
+                                searchPlaceholder="Search owners..."
+                            />
                         )}
                     </Field>
 
                     <Field label="Support team" error={errors.support_role_id}>
                         {(props) => (
-                            <Select
-                                {...props}
+                            <SearchableSelect
+                                id={props.id}
+                                invalid={props['aria-invalid']}
+                                describedBy={props['aria-describedby']}
+                                options={supportRoleOptions}
                                 value={data.support_role_id}
-                                onChange={(e) => setData('support_role_id', e.target.value)}
-                            >
-                                <option value="">Unassigned</option>
-                                {roles.map((role) => (
-                                    <option key={role.id} value={role.id}>
-                                        {role.name.replace(/_/g, ' ')}
-                                    </option>
-                                ))}
-                            </Select>
+                                onChange={(value) => setData('support_role_id', value)}
+                                placeholder="Unassigned"
+                                searchPlaceholder="Search roles..."
+                            />
                         )}
                     </Field>
                 </CardBody>

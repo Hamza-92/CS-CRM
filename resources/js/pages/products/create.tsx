@@ -1,6 +1,8 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { ProductForm } from '@/components/products/product-form';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import type { RoleRef, UserRef } from '@/types';
 
@@ -11,10 +13,10 @@ export default function ProductCreate({ owners, roles }: { owners: UserRef[]; ro
 
             <PageHeader
                 title="New product"
-                breadcrumbs={[{ label: 'Products', href: '/products' }, { label: 'New' }]}
+                actions={<Button variant="secondary" onClick={() => router.visit('/products')}><ArrowLeft /> Back to Products</Button>}
             />
 
-            <div className="max-w-3xl">
+            <div className="w-full">
                 <ProductForm owners={owners} roles={roles} action="/products" method="post" submitLabel="Create product" />
             </div>
         </AppLayout>

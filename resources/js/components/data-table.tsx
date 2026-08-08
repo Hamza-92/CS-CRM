@@ -1,5 +1,5 @@
 import { tableFeatures, useTable } from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +44,7 @@ export function DataTable<TData extends object>({
     return (
         <div className="overflow-x-auto">
             <table className="w-full border-collapse">
-                <thead className="bg-surface-2">
+                <thead className="bg-[#F0F0F1]">
                     {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id} className="border-b border-line">
                             {headerGroup.headers.map((header) => {
@@ -56,7 +56,7 @@ export function DataTable<TData extends object>({
                                     <th
                                         key={header.id}
                                         scope="col"
-                                        className="h-9 px-3 text-left align-middle first:pl-3.5 last:pr-3.5"
+                                        className="h-10 px-3 text-left align-middle first:pl-3.5 last:pr-3.5"
                                         aria-sort={
                                             isSorted ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined
                                         }
@@ -68,23 +68,23 @@ export function DataTable<TData extends object>({
                                                     onSortChange?.(id, isSorted && sort.direction === 'asc' ? 'desc' : 'asc')
                                                 }
                                                 className={cn(
-                                                    'eyebrow inline-flex items-center gap-1 transition-colors',
+                                                    'inline-flex items-center gap-1 text-xs font-semibold transition-colors',
                                                     isSorted ? 'text-ink' : 'text-ink-3 hover:text-ink-2',
                                                 )}
                                             >
                                                 <table.FlexRender header={header} />
                                                 {isSorted ? (
                                                     sort.direction === 'asc' ? (
-                                                        <ArrowUp className="size-2.5" />
+                                                        <ChevronUp className="size-3" />
                                                     ) : (
-                                                        <ArrowDown className="size-2.5" />
+                                                        <ChevronDown className="size-3" />
                                                     )
                                                 ) : (
-                                                    <ChevronsUpDown className="size-2.5 opacity-40" />
+                                                    <ChevronsUpDown className="size-3 opacity-40" />
                                                 )}
                                             </button>
                                         ) : (
-                                            <span className="eyebrow text-ink-3">
+                                                    <span className="text-xs font-semibold text-ink-2">
                                                 <table.FlexRender header={header} />
                                             </span>
                                         )}
@@ -110,7 +110,7 @@ export function DataTable<TData extends object>({
                                 {row.getAllCells().map((cell) => (
                                     <td
                                         key={cell.id}
-                                        className="h-12 px-3 align-middle text-xs text-ink-2 first:pl-3.5 last:pr-3.5"
+                                        className="h-[60px] px-3 align-middle text-xs text-ink-2 first:pl-3.5 last:pr-3.5"
                                     >
                                         <table.FlexRender cell={cell} />
                                     </td>

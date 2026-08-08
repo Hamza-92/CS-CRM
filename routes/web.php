@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LoginHistoryController;
+use App\Http\Controllers\PlanController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +18,21 @@ Route::middleware('auth')->group(function () {
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::get('products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('products/archived', [ProductController::class, 'archived'])->name('products.archived');
+    Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('products', [ProductController::class, 'store'])->name('products.store');
+    Route::get('products/{product}', [ProductController::class, 'show'])->withTrashed()->name('products.show');
+    Route::get('products/{product}/edit', [ProductController::class, 'edit'])->withTrashed()->name('products.edit');
+    Route::put('products/{product}', [ProductController::class, 'update'])->withTrashed()->name('products.update');
+    Route::delete('products/{product}', [ProductController::class, 'destroy'])->withTrashed()->name('products.destroy');
+    Route::patch('products/{product}/restore', [ProductController::class, 'restore'])->withTrashed()->name('products.restore');
+    Route::get('products/{product}/plans', [PlanController::class, 'index'])->withTrashed()->name('products.plans.index');
+    Route::get('products/{product}/plans/create', [PlanController::class, 'create'])->withTrashed()->name('products.plans.create');
+    Route::post('products/{product}/plans', [PlanController::class, 'store'])->withTrashed()->name('products.plans.store');
+    Route::get('plans/{plan}/edit', [PlanController::class, 'edit'])->name('plans.edit');
+    Route::put('plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
+    Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
     Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
     Route::get('roles/create', [RoleController::class, 'create'])->name('roles.create');
     Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');

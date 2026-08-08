@@ -1,6 +1,8 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { ProductForm } from '@/components/products/product-form';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import type { Product, RoleRef, UserRef } from '@/types';
 
@@ -19,14 +21,10 @@ export default function ProductEdit({
 
             <PageHeader
                 title={`Edit ${product.name}`}
-                breadcrumbs={[
-                    { label: 'Products', href: '/products' },
-                    { label: product.name, href: `/products/${product.id}` },
-                    { label: 'Edit' },
-                ]}
+                actions={<Button variant="secondary" onClick={() => router.visit(`/products/${product.id}`)}><ArrowLeft /> Back to Product</Button>}
             />
 
-            <div className="max-w-3xl">
+            <div className="w-full">
                 <ProductForm
                     product={product}
                     owners={owners}

@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Bell,
+    Boxes,
     KeyRound,
     PanelLeftClose,
     PanelLeftOpen,
@@ -34,6 +35,12 @@ interface NavGroup {
 }
 
 const groups: NavGroup[] = [
+    {
+        label: 'Catalog',
+        items: [
+            { label: 'Products', href: '/products', icon: Boxes, ability: 'products.view', match: (p) => p.startsWith('/products') || p.startsWith('/plans') },
+        ],
+    },
     {
         label: 'Administration',
         items: [

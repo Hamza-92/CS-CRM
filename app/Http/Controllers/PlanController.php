@@ -19,9 +19,13 @@ class PlanController extends Controller
         return redirect()->route('products.show', $product);
     }
 
-    public function create(Product $product): Response
+    public function create(Product $product): Response|RedirectResponse
     {
         Gate::authorize('create', Plan::class);
+
+        if ($product->trashed()) {
+            return redirect()->route('products.show', $product)->with('error', 'Archived products cannot receive new plans.');
+        }
 
         return Inertia::render('plans/create', [
             'product' => $product->only(['id', 'name', 'code', 'default_trial_days']),
@@ -36,6 +40,10 @@ class PlanController extends Controller
 
     public function store(StorePlanRequest $request, Product $product): RedirectResponse
     {
+        if ($product->trashed()) {
+            return redirect()->route('products.show', $product)->with('error', 'Archived products cannot receive new plans.');
+        }
+
         $plan = $product->plans()->create($request->validated());
 
         return redirect()
