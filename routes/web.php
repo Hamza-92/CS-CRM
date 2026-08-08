@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadSourceController;
@@ -22,10 +24,11 @@ use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\WorkTaskController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/users')->name('home');
+Route::redirect('/', '/dashboard')->name('home');
 
 Route::middleware('auth')->group(function () {
-    Route::redirect('dashboard', '/users')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('activity', ActivityController::class)->name('activity.index');
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');

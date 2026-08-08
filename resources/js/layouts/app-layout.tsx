@@ -11,6 +11,7 @@ import {
     GitBranch,
     KeyRound,
     LifeBuoy,
+    LayoutDashboard,
     ListChecks,
     PanelLeftClose,
     PanelLeftOpen,
@@ -52,6 +53,12 @@ interface NavGroup {
 }
 
 const groups: NavGroup[] = [
+    {
+        label: 'Workspace',
+        items: [
+            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
+        ],
+    },
     {
         label: 'Catalog',
         items: [
@@ -124,7 +131,7 @@ function Rail({
                     collapsed ? 'justify-center px-2' : 'px-5',
                 )}
             >
-                <Link href="/users" aria-label={appName}>
+                <Link href="/dashboard" aria-label={appName}>
                     {collapsed ? <WordmarkBadge name={appName} /> : <Wordmark name={appName} size="md" />}
                 </Link>
             </div>
