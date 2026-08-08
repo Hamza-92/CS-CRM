@@ -134,7 +134,7 @@ export function StatCard({
                     aria-hidden="true"
                     className="absolute -top-4 -right-4 size-20 rounded-full bg-[color-mix(in_oklch,var(--stat-color)_9%,transparent)] transition-transform duration-500 ease-out group-hover:scale-110"
                 >
-                    <ArrowUpRight className="absolute top-7 left-7 size-3.5 text-[color-mix(in_oklch,var(--stat-color)_48%,transparent)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--stat-color)]" strokeWidth={1.7} />
+                    <ArrowUpRight className="absolute top-7 right-7 size-3.5 text-[color-mix(in_oklch,var(--stat-color)_48%,transparent)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--stat-color)]" strokeWidth={1.7} />
                 </span>
                 <div className="relative z-10 flex h-full flex-col items-start">
                     <span
