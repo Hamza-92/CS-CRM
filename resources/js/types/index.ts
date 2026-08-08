@@ -55,6 +55,8 @@ export interface RoleRef {
 export interface UserRef {
     id: number;
     name: string;
+    email?: string;
+    roles?: RoleRef[];
 }
 
 export interface RoleOption {

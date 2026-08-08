@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\LoginHistoryController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,7 @@ Route::middleware('auth')->group(function () {
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::get('login-history', LoginHistoryController::class)->name('login-history.index');
     Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

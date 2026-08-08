@@ -234,7 +234,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     <UserMenu />
                 </header>
 
-                <main className="px-4 pt-4 pb-[50px] sm:px-6 lg:px-[50px]">
+                <main className="px-4 pt-4 pb-[50px] sm:px-6 lg:px-6">
                     <div className="mx-auto max-w-[1600px]">
                         <Flash />
                         {children}

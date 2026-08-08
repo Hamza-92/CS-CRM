@@ -57,6 +57,7 @@ class UserController extends Controller
             'can' => [
                 'create' => $request->user()->can('create', User::class),
                 'manage' => $request->user()->can('create', User::class),
+                'login_history' => $request->user()->can('viewAny', \App\Models\Activity::class),
             ],
         ]);
     }

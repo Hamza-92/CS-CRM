@@ -5,6 +5,7 @@ import {
     ChevronDown,
     ChevronUp,
     ChevronsUpDown,
+    History,
     Eye,
     KeyRound,
     Lock,
@@ -42,7 +43,7 @@ interface Props {
     users: Paginated<ManagedUser>;
     roles: RoleOption[];
     filters: { search: string; status: string; role: string; sort: string; direction: 'asc' | 'desc'; per_page: number };
-    can: { create: boolean; manage: boolean };
+    can: { create: boolean; manage: boolean; login_history: boolean };
 }
 
 const actionButton =
@@ -125,13 +126,20 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
 
             <PageHeader
                 title="Users"
-                actions={
-                    can.create && (
-                        <Button onClick={openCreate}>
-                            <Plus />
-                            Add User
-                        </Button>
-                    )
+    actions={
+                    <div className="flex items-center gap-2">
+                        {can.login_history && <Tooltip label="Login History">
+                            <Button variant="secondary" size="icon" aria-label="Login History" onClick={() => router.visit('/login-history')}>
+                                <History />
+                            </Button>
+                        </Tooltip>}
+                        {can.create && (
+                            <Button onClick={openCreate}>
+                                <Plus />
+                                Add User
+                            </Button>
+                        )}
+                    </div>
                 }
             />
 
