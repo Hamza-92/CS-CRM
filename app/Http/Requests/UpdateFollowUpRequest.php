@@ -15,6 +15,7 @@ class UpdateFollowUpRequest extends FormRequest
         return [
             'lead_id' => ['nullable', 'integer', 'exists:leads,id'],
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'deal_id' => ['nullable', 'integer', 'exists:deals,id'],
             'reason' => ['required', 'string', 'max:120'],
             'notes' => ['nullable', 'string', 'max:10000'],
             'owner_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -26,8 +27,8 @@ class UpdateFollowUpRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
-            if ($this->filled('lead_id') === $this->filled('customer_id')) {
-                $validator->errors()->add('lead_id', 'Choose exactly one lead or customer.');
+            if (collect(['lead_id', 'customer_id', 'deal_id'])->filter(fn ($field) => $this->filled($field))->count() !== 1) {
+                $validator->errors()->add('lead_id', 'Choose exactly one lead, customer, or deal.');
             }
         });
     }

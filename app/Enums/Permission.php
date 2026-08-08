@@ -45,6 +45,12 @@ enum Permission: string
     case EditFollowUps = 'follow_ups.edit';
     case DeleteFollowUps = 'follow_ups.delete';
     case CompleteFollowUps = 'follow_ups.complete';
+    case ManageDeals = 'deals.manage';
+    case ViewDeals = 'deals.view';
+    case CreateDeals = 'deals.create';
+    case EditDeals = 'deals.edit';
+    case ArchiveDeals = 'deals.archive';
+    case ManageDealStages = 'deal_stages.manage';
 
     public function label(): string
     {
@@ -90,6 +96,12 @@ enum Permission: string
             self::EditFollowUps => 'Edit follow-ups',
             self::DeleteFollowUps => 'Delete follow-ups',
             self::CompleteFollowUps => 'Complete follow-ups',
+            self::ManageDeals => 'Manage deals',
+            self::ViewDeals => 'View deals',
+            self::CreateDeals => 'Create deals',
+            self::EditDeals => 'Edit deals',
+            self::ArchiveDeals => 'Archive deals',
+            self::ManageDealStages => 'Manage deal stages',
         };
     }
 
@@ -116,6 +128,7 @@ enum Permission: string
                 self::ViewLeads, self::CreateLeads, self::EditLeads, self::ArchiveLeads, self::ConvertLeads,
                 self::ViewCustomers, self::CreateCustomers, self::EditCustomers, self::ArchiveCustomers,
                 self::ManageFollowUps, self::ViewFollowUps, self::CreateFollowUps, self::EditFollowUps, self::DeleteFollowUps, self::CompleteFollowUps,
+                self::ManageDeals, self::ViewDeals, self::CreateDeals, self::EditDeals, self::ArchiveDeals, self::ManageDealStages,
             ],
             RoleName::Sales->value => [
                 self::ViewProducts,
@@ -123,6 +136,7 @@ enum Permission: string
                 self::ViewLeads, self::CreateLeads, self::EditLeads, self::ConvertLeads,
                 self::ViewCustomers, self::CreateCustomers, self::EditCustomers,
                 self::ViewFollowUps, self::CreateFollowUps, self::EditFollowUps, self::CompleteFollowUps,
+                self::ViewDeals, self::CreateDeals, self::EditDeals,
             ],
             RoleName::Developer->value => [
                 self::ViewProducts,
@@ -142,6 +156,7 @@ enum Permission: string
                 self::ViewPlans, self::ViewPlanPricing,
                 self::ViewCustomers,
                 self::ViewFollowUps,
+                self::ViewDeals,
             ],
             RoleName::Management->value => [
                 self::ViewProducts,
@@ -150,6 +165,7 @@ enum Permission: string
                 self::ViewActivityLog,
                 self::ViewLeads, self::ViewCustomers,
                 self::ViewFollowUps,
+                self::ViewDeals,
             ],
         ];
     }

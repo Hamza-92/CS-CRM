@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreFollowUpRequest;
 use App\Http\Requests\UpdateFollowUpRequest;
 use App\Models\Customer;
+use App\Models\Deal;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\Product;
@@ -29,7 +30,7 @@ class FollowUpController extends Controller
         $perPage = in_array($request->integer('per_page', 12), [12, 25, 50, 100], true) ? $request->integer('per_page', 12) : 12;
 
         $query = FollowUp::query()
-            ->with(['lead:id,name,business,email', 'customer:id,name,business,email', 'owner:id,name,email,avatar_path'])
+            ->with(['lead:id,name,business,email', 'customer:id,name,business,email', 'deal:id,title,customer_id,lead_id', 'owner:id,name,email,avatar_path'])
             ->search($request->string('search')->toString())
             ->when($status !== '', fn (Builder $query) => $query->where('status', $status))
             ->when($request->filled('owner_id'), fn (Builder $query) => $query->where('owner_id', $request->integer('owner_id')))
@@ -70,7 +71,7 @@ class FollowUpController extends Controller
     {
         abort_unless($request->user()->can('create', FollowUp::class), 403);
 
-        return Inertia::render('follow-ups/create', $this->formOptions($request->integer('lead_id') ?: null, $request->integer('customer_id') ?: null));
+        return Inertia::render('follow-ups/create', $this->formOptions($request->integer('lead_id') ?: null, $request->integer('customer_id') ?: null, $request->integer('deal_id') ?: null));
     }
 
     public function store(StoreFollowUpRequest $request): RedirectResponse
@@ -79,7 +80,7 @@ class FollowUpController extends Controller
         $data['status'] = $data['status'] ?? 'pending';
         $data['created_by_id'] = $request->user()->id;
         $followUp = FollowUp::create($data);
-        $followUp->load(['lead', 'customer']);
+        $followUp->load(['lead', 'customer', 'deal']);
 
         return redirect()->route('follow-ups.index')->with('success', "Follow-up for {$followUp->subjectName()} scheduled.");
     }
@@ -87,9 +88,9 @@ class FollowUpController extends Controller
     public function edit(Request $request, FollowUp $followUp): Response
     {
         abort_unless($request->user()->can('update', $followUp), 403);
-        $followUp->load(['lead:id,name,business,email', 'customer:id,name,business,email', 'owner:id,name,email,avatar_path']);
+        $followUp->load(['lead:id,name,business,email', 'customer:id,name,business,email', 'deal:id,title,customer_id,lead_id', 'owner:id,name,email,avatar_path']);
 
-        return Inertia::render('follow-ups/edit', ['followUp' => $this->payload($followUp), ...$this->formOptions($followUp->lead_id, $followUp->customer_id)]);
+        return Inertia::render('follow-ups/edit', ['followUp' => $this->payload($followUp), ...$this->formOptions($followUp->lead_id, $followUp->customer_id, $followUp->deal_id)]);
     }
 
     public function update(UpdateFollowUpRequest $request, FollowUp $followUp, ActivityLogger $logger): RedirectResponse
@@ -125,6 +126,7 @@ class FollowUpController extends Controller
                 FollowUp::create([
                     'lead_id' => $followUp->lead_id,
                     'customer_id' => $followUp->customer_id,
+                    'deal_id' => $followUp->deal_id,
                     'reason' => $followUp->reason,
                     'notes' => $request->string('next_notes')->toString() ?: null,
                     'owner_id' => $followUp->owner_id,
@@ -156,17 +158,20 @@ class FollowUpController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function formOptions(?int $leadId = null, ?int $customerId = null): array
+    private function formOptions(?int $leadId = null, ?int $customerId = null, ?int $dealId = null): array
     {
         $leads = Lead::query()->whereNull('deleted_at')->orderBy('name')->limit(500)->get(['id', 'name', 'business', 'email']);
         $customers = Customer::query()->whereNull('deleted_at')->orderBy('name')->limit(500)->get(['id', 'name', 'business', 'email']);
+        $deals = Deal::query()->whereNull('deleted_at')->orderBy('title')->limit(500)->get(['id', 'title', 'customer_id', 'lead_id']);
 
         if ($leadId && ! $leads->contains('id', $leadId)) $leads->push(Lead::query()->findOrFail($leadId, ['id', 'name', 'business', 'email']));
         if ($customerId && ! $customers->contains('id', $customerId)) $customers->push(Customer::query()->findOrFail($customerId, ['id', 'name', 'business', 'email']));
+        if ($dealId && ! $deals->contains('id', $dealId)) $deals->push(Deal::query()->findOrFail($dealId, ['id', 'title', 'customer_id', 'lead_id']));
 
         return [
             'leads' => $leads,
             'customers' => $customers,
+            'deals' => $deals,
             'owners' => $this->owners(),
         ];
     }
@@ -179,8 +184,8 @@ class FollowUpController extends Controller
     /** @param array<string, mixed> $data */
     private function validatedLinkedData(array $data): array
     {
-        if (empty($data['lead_id']) === empty($data['customer_id'])) {
-            abort(422, 'Choose exactly one lead or customer for this follow-up.');
+        if (collect(['lead_id', 'customer_id', 'deal_id'])->filter(fn ($field) => ! empty($data[$field]))->count() !== 1) {
+            abort(422, 'Choose exactly one lead, customer, or deal for this follow-up.');
         }
 
         return $data;
@@ -189,12 +194,13 @@ class FollowUpController extends Controller
     /** @return array<string, mixed> */
     private function payload(FollowUp $followUp): array
     {
-        $subject = $followUp->lead ?? $followUp->customer;
+        $subject = $followUp->deal ?? $followUp->lead ?? $followUp->customer;
 
         return [
             'id' => $followUp->id,
             'lead_id' => $followUp->lead_id,
             'customer_id' => $followUp->customer_id,
+            'deal_id' => $followUp->deal_id,
             'reason' => $followUp->reason,
             'notes' => $followUp->notes,
             'owner_id' => $followUp->owner_id,
@@ -204,7 +210,7 @@ class FollowUpController extends Controller
             'status_label' => str($followUp->status)->headline()->toString(),
             'is_overdue' => $followUp->isOverdue(),
             'completed_at' => $followUp->completed_at?->toISOString(),
-            'subject' => $subject ? ['id' => $subject->id, 'name' => $subject->name, 'business' => $subject->business, 'type' => $followUp->lead_id ? 'lead' : 'customer'] : null,
+            'subject' => $subject ? ['id' => $subject->id, 'name' => $followUp->deal_id ? $subject->title : $subject->name, 'business' => $followUp->deal_id ? null : $subject->business, 'type' => $followUp->deal_id ? 'deal' : ($followUp->lead_id ? 'lead' : 'customer')] : null,
             'created_at' => $followUp->created_at?->toISOString(),
             'updated_at' => $followUp->updated_at?->toISOString(),
         ];

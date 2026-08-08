@@ -68,6 +68,7 @@ class CustomerController extends Controller
             'can' => [
                 'update' => $request->user()->can('update', $customer),
                 'create_follow_up' => $request->user()->can('create', \App\Models\FollowUp::class),
+                'create_deal' => $request->user()->can('create', \App\Models\Deal::class),
                 'archive' => $request->user()->can('delete', $customer),
             ],
         ]);

@@ -48,7 +48,13 @@ export type Ability =
     | 'follow_ups.create'
     | 'follow_ups.edit'
     | 'follow_ups.delete'
-    | 'follow_ups.complete';
+    | 'follow_ups.complete'
+    | 'deals.manage'
+    | 'deals.view'
+    | 'deals.create'
+    | 'deals.edit'
+    | 'deals.archive'
+    | 'deal_stages.manage';
 
 export interface SharedProps {
     app: { name: string; theme: 'light' | 'dark' };
@@ -154,6 +160,7 @@ export interface FollowUp {
     id: number;
     lead_id: number | null;
     customer_id: number | null;
+    deal_id: number | null;
     reason: string;
     notes: string | null;
     owner_id: number | null;
@@ -163,9 +170,51 @@ export interface FollowUp {
     status_label: string;
     is_overdue: boolean;
     completed_at: string | null;
-    subject: { id: number; name: string; business: string | null; type: 'lead' | 'customer' } | null;
+    subject: { id: number; name: string; business: string | null; type: 'lead' | 'customer' | 'deal' } | null;
     created_at: string;
     updated_at: string;
+}
+
+export interface DealStage {
+    id: number;
+    name: string;
+    slug: string;
+    color: string;
+    probability: number;
+    status?: 'active' | 'inactive';
+    is_won: boolean;
+    is_lost: boolean;
+    sort_order?: number;
+    deals_count?: number;
+}
+
+export interface Deal {
+    id: number;
+    title: string;
+    lead_id: number | null;
+    customer_id: number | null;
+    product_id: number | null;
+    plan_id: number | null;
+    stage_id: number;
+    owner_id: number | null;
+    amount: string;
+    currency: string;
+    probability: number;
+    expected_close_date: string | null;
+    next_step: string | null;
+    notes: string | null;
+    loss_reason: string | null;
+    won_at: string | null;
+    lost_at: string | null;
+    lead: { id: number; name: string; business: string | null } | null;
+    customer: { id: number; name: string; business: string | null } | null;
+    product: { id: number; name: string; code: string; brand_color?: string | null } | null;
+    plan: { id: number; name: string; code: string } | null;
+    stage: DealStage | null;
+    owner: UserRef | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
 }
 
 export interface RoleOption {

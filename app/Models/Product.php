@@ -53,6 +53,11 @@ class Product extends Model
         return $this->hasMany(Plan::class)->orderBy('sort_order')->orderBy('name');
     }
 
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
+    }
+
     public function technicalOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'technical_owner_id');

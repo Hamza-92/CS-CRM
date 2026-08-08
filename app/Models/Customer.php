@@ -43,6 +43,11 @@ class Customer extends Model
         return $this->hasMany(FollowUp::class);
     }
 
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
+    }
+
     public function activityDescription(string $event): ?string
     {
         return "Customer {$this->name} {$event}";

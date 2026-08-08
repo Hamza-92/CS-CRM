@@ -6,6 +6,8 @@ import {
     ChevronDown,
     ContactRound,
     Globe2,
+    Handshake,
+    GitBranch,
     KeyRound,
     PanelLeftClose,
     PanelLeftOpen,
@@ -76,6 +78,15 @@ const groups: NavGroup[] = [
             { label: 'Lead Status', href: '/lead-statuses', icon: Tag, ability: 'leads.manage', match: (p) => p.startsWith('/lead-statuses') },
         ],
     },
+    {
+        label: 'Sales Pipeline',
+        icon: Handshake,
+        collapsible: true,
+        items: [
+            { label: 'Deals', href: '/deals', icon: Handshake, ability: 'deals.view', match: (p) => p.startsWith('/deals') },
+            { label: 'Deal Stages', href: '/deal-stages', icon: GitBranch, ability: 'deal_stages.manage', match: (p) => p.startsWith('/deal-stages') },
+        ],
+    },
 ];
 
 function Rail({
@@ -90,7 +101,7 @@ function Rail({
     const { can } = useAuth();
     const page = usePage<SharedProps>();
     const appName = page.props.app.name;
-    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ 'Lead Management': path.startsWith('/leads') || path.startsWith('/lead-') });
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ 'Lead Management': path.startsWith('/leads') || path.startsWith('/lead-'), 'Sales Pipeline': path.startsWith('/deals') || path.startsWith('/deal-stages') });
 
     const visible = groups
         .map((group) => ({ ...group, items: group.items.filter((item) => !item.ability || can(item.ability)) }))

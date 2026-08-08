@@ -44,6 +44,11 @@ class Lead extends Model
         return $this->hasMany(FollowUp::class);
     }
 
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
+    }
+
     public function statusDefinition(): BelongsTo
     {
         return $this->belongsTo(LeadStatusOption::class, 'status', 'slug');

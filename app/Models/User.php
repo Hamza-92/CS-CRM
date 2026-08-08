@@ -64,6 +64,11 @@ class User extends Authenticatable
         return $this->hasMany(Product::class, 'technical_owner_id');
     }
 
+    public function ownedDeals(): HasMany
+    {
+        return $this->hasMany(Deal::class, 'owner_id');
+    }
+
     public function activityDescription(string $event): ?string
     {
         return "User {$this->name} {$event}";
