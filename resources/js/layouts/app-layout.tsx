@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Flash } from '@/components/flash';
+import { ToastProvider } from '@/components/toast';
 import { UserMenu } from '@/components/user-menu';
 import { Wordmark, WordmarkBadge } from '@/components/wordmark';
 import { useAuth } from '@/hooks/use-auth';
@@ -154,6 +155,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
 
     return (
+        <ToastProvider>
         <div className="min-h-screen bg-canvas">
             <aside
                 className={cn(
@@ -242,5 +244,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </main>
             </div>
         </div>
+        </ToastProvider>
     );
 }

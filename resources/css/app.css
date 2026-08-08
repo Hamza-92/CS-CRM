@@ -216,6 +216,16 @@
 }
 
 @layer components {
+    @keyframes toast-progress {
+        from { transform: scaleX(1); }
+        to { transform: scaleX(0); }
+    }
+
+    @keyframes toast-in {
+        from { opacity: 0; transform: translate3d(18px, -8px, 0) scale(0.98); }
+        to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    }
+
     .num {
         font-variant-numeric: tabular-nums;
         letter-spacing: -0.01em;

@@ -26,6 +26,8 @@ export interface SharedProps {
     flash: {
         success: string | null;
         error: string | null;
+        warning?: string | null;
+        info?: string | null;
     };
     [key: string]: unknown;
 }
