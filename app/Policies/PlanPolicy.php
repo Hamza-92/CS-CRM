@@ -25,21 +25,26 @@ class PlanPolicy
 
     public function create(User $user): bool
     {
-        return $user->can(Permission::ManagePlans->value);
+        return $this->canAny($user, Permission::CreatePlans, Permission::ManagePlans);
     }
 
     public function update(User $user, Plan $plan): bool
     {
-        return $user->can(Permission::ManagePlans->value);
+        return $this->canAny($user, Permission::EditPlans, Permission::ManagePlans);
     }
 
     public function delete(User $user, Plan $plan): bool
     {
-        return $user->can(Permission::ManagePlans->value);
+        return $this->canAny($user, Permission::ArchivePlans, Permission::ManagePlans);
     }
 
     public function restore(User $user, Plan $plan): bool
     {
-        return $user->can(Permission::ManagePlans->value);
+        return $this->canAny($user, Permission::ArchivePlans, Permission::ManagePlans);
+    }
+
+    private function canAny(User $user, Permission ...$permissions): bool
+    {
+        return collect($permissions)->contains(fn (Permission $permission) => $user->can($permission->value));
     }
 }

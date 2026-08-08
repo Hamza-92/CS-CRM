@@ -20,21 +20,26 @@ class ProductPolicy
 
     public function create(User $user): bool
     {
-        return $user->can(Permission::ManageProducts->value);
+        return $this->canAny($user, Permission::CreateProducts, Permission::ManageProducts);
     }
 
     public function update(User $user, Product $product): bool
     {
-        return $user->can(Permission::ManageProducts->value);
+        return $this->canAny($user, Permission::EditProducts, Permission::ManageProducts);
     }
 
     public function delete(User $user, Product $product): bool
     {
-        return $user->can(Permission::ManageProducts->value);
+        return $this->canAny($user, Permission::ArchiveProducts, Permission::ManageProducts);
     }
 
     public function restore(User $user, Product $product): bool
     {
-        return $user->can(Permission::ManageProducts->value);
+        return $this->canAny($user, Permission::ArchiveProducts, Permission::ManageProducts);
+    }
+
+    private function canAny(User $user, Permission ...$permissions): bool
+    {
+        return collect($permissions)->contains(fn (Permission $permission) => $user->can($permission->value));
     }
 }

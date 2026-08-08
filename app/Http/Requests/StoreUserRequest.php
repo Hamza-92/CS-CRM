@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 
 class StoreUserRequest extends FormRequest
 {
@@ -44,7 +45,7 @@ class StoreUserRequest extends FormRequest
      */
     protected function assignableRoles(): array
     {
-        $roles = RoleName::values();
+        $roles = Role::query()->where('guard_name', 'web')->pluck('name')->all();
 
         if (! $this->user()->hasRole(RoleName::SuperAdmin->value)) {
             $roles = array_values(array_diff($roles, [RoleName::SuperAdmin->value]));

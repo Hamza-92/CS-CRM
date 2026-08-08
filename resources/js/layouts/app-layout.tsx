@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Bell,
+    KeyRound,
     PanelLeftClose,
     PanelLeftOpen,
     Search,
@@ -37,6 +38,7 @@ const groups: NavGroup[] = [
         label: 'Administration',
         items: [
             { label: 'Users', href: '/users', icon: Users, ability: 'users.view', match: (p) => p.startsWith('/users') },
+            { label: 'Roles & Permissions', href: '/roles', icon: KeyRound, ability: 'roles.manage', match: (p) => p.startsWith('/roles') },
         ],
     },
 ];

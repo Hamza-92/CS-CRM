@@ -11,8 +11,10 @@ use App\Support\Audit\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -125,16 +127,16 @@ class UserController extends Controller
      */
     protected function roleOptions(Request $request): array
     {
-        $roles = collect(RoleName::cases());
+        $roles = Role::query()->where('guard_name', 'web')->orderBy('name')->get(['name']);
 
         if (! $request->user()->hasRole(RoleName::SuperAdmin->value)) {
-            $roles = $roles->reject(fn (RoleName $role) => $role === RoleName::SuperAdmin);
+            $roles = $roles->reject(fn (Role $role) => $role->name === RoleName::SuperAdmin->value);
         }
 
-        return $roles->map(fn (RoleName $role) => [
-            'value' => $role->value,
-            'label' => $role->label(),
-            'description' => $role->description(),
+        return $roles->map(fn (Role $role) => [
+            'value' => $role->name,
+            'label' => RoleName::tryFrom($role->name)?->label() ?? Str::headline($role->name),
+            'description' => RoleName::tryFrom($role->name)?->description() ?? '',
         ])->values()->all();
     }
 }

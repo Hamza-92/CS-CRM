@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\RoleName;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -35,7 +36,7 @@ class UpdateUserRequest extends FormRequest
      */
     protected function assignableRoles(): array
     {
-        $roles = RoleName::values();
+        $roles = Role::query()->where('guard_name', 'web')->pluck('name')->all();
 
         if (! $this->user()->hasRole(RoleName::SuperAdmin->value)) {
             $roles = array_values(array_diff($roles, [RoleName::SuperAdmin->value]));

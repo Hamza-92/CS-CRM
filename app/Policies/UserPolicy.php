@@ -20,7 +20,7 @@ class UserPolicy
 
     public function create(User $user): bool
     {
-        return $user->can(Permission::ManageUsers->value);
+        return $this->canAny($user, Permission::CreateUsers, Permission::ManageUsers);
     }
 
     public function update(User $user, User $target): bool
@@ -29,12 +29,14 @@ class UserPolicy
             return false;
         }
 
-        return $user->can(Permission::ManageUsers->value);
+        return $this->canAny($user, Permission::EditUsers, Permission::ManageUsers);
     }
 
     public function resetPassword(User $user, User $target): bool
     {
-        return $this->update($user, $target);
+        return ! $this->isProtected($user, $target)
+            && ! $user->is($target)
+            && $this->canAny($user, Permission::ResetUserPasswords, Permission::ManageUsers);
     }
 
     public function toggleStatus(User $user, User $target): bool
@@ -43,7 +45,9 @@ class UserPolicy
             return false;
         }
 
-        return $this->update($user, $target);
+        return ! $this->isProtected($user, $target)
+            && ! $user->is($target)
+            && $this->canAny($user, Permission::ChangeUserStatus, Permission::ManageUsers);
     }
 
     public function delete(User $user, User $target): bool
@@ -52,7 +56,9 @@ class UserPolicy
             return false;
         }
 
-        return $this->update($user, $target);
+        return ! $this->isProtected($user, $target)
+            && ! $user->is($target)
+            && $this->canAny($user, Permission::DeleteUsers, Permission::ManageUsers);
     }
 
     public function assignRoles(User $user, User $target): bool
@@ -68,5 +74,10 @@ class UserPolicy
     {
         return $target->hasRole(RoleName::SuperAdmin->value)
             && ! $user->hasRole(RoleName::SuperAdmin->value);
+    }
+
+    private function canAny(User $user, Permission ...$permissions): bool
+    {
+        return collect($permissions)->contains(fn (Permission $permission) => $user->can($permission->value));
     }
 }

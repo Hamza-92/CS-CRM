@@ -124,7 +124,7 @@ export default function ProductsIndex({ products, filters }: Props) {
                     </Badge>
                 }
                 actions={
-                    can('products.manage') && (
+                    (can('products.create') || can('products.manage')) && (
                         <Link href="/products/create">
                             <Button>
                                 <Plus />
@@ -184,7 +184,7 @@ export default function ProductsIndex({ products, filters }: Props) {
                                 values.search ? 'Try a different search term.' : 'Create a product to start adding plans.'
                             }
                             action={
-                                can('products.manage') &&
+                                (can('products.create') || can('products.manage')) &&
                                 !values.search && (
                                     <Link href="/products/create">
                                         <Button size="sm">

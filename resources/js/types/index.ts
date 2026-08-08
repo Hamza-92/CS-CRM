@@ -9,12 +9,27 @@ export interface AuthUser {
 export type Ability =
     | 'products.view'
     | 'products.manage'
+    | 'products.create'
+    | 'products.edit'
+    | 'products.archive'
     | 'plans.view'
     | 'plans.manage'
+    | 'plans.create'
+    | 'plans.edit'
+    | 'plans.archive'
     | 'plans.pricing.view'
     | 'users.view'
     | 'users.manage'
+    | 'users.create'
+    | 'users.edit'
+    | 'users.delete'
+    | 'users.password.reset'
+    | 'users.status.change'
     | 'roles.manage'
+    | 'roles.view'
+    | 'roles.create'
+    | 'roles.edit'
+    | 'roles.delete'
     | 'activity_log.view';
 
 export interface SharedProps {
@@ -65,6 +80,24 @@ export interface RoleOption {
     value: string;
     label: string;
     description: string;
+}
+
+export interface PermissionDefinition {
+    value: string;
+    label: string;
+    group: string;
+}
+
+export interface ManagedRole {
+    id: number;
+    name: string;
+    label: string;
+    is_system: boolean;
+    is_protected: boolean;
+    users_count: number;
+    permissions_count: number;
+    permission_names: string[];
+    updated_at: string | null;
 }
 
 export interface BillingCycleOption {
