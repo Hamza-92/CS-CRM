@@ -20,8 +20,10 @@ Route::middleware('auth')->group(function () {
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
     Route::get('products/archived', [ProductController::class, 'archived'])->name('products.archived');
+    Route::get('products/export', [ProductController::class, 'export'])->name('products.export');
     Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('products', [ProductController::class, 'store'])->name('products.store');
+    Route::post('products/import', [ProductController::class, 'import'])->name('products.import');
     Route::get('products/{product}', [ProductController::class, 'show'])->withTrashed()->name('products.show');
     Route::get('products/{product}/edit', [ProductController::class, 'edit'])->withTrashed()->name('products.edit');
     Route::put('products/{product}', [ProductController::class, 'update'])->withTrashed()->name('products.update');

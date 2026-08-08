@@ -10,6 +10,7 @@ import type { Product, RoleRef, UserRef } from '@/types';
 interface ProductFormValues {
     name: string;
     code: string;
+    brand_color: string;
     description: string;
     is_active: boolean;
     technical_owner_id: string;
@@ -36,6 +37,7 @@ export function ProductForm({
     const { data, setData, post, put, processing, errors } = useForm<ProductFormValues>({
         name: product?.name ?? '',
         code: product?.code ?? '',
+        brand_color: product?.brand_color ?? '#3B82F6',
         description: product?.description ?? '',
         is_active: product?.is_active ?? true,
         technical_owner_id: product?.technical_owner_id ? String(product.technical_owner_id) : '',
@@ -62,7 +64,7 @@ export function ProductForm({
         <form onSubmit={submit} noValidate className="space-y-4">
             <Card>
                 <CardHeader title="Details" />
-                <CardBody className="grid gap-4 sm:grid-cols-3">
+                <CardBody className="grid gap-4 sm:grid-cols-4">
                     <Field label="Name" error={errors.name} required className="sm:col-span-2">
                         {(props) => (
                             <Input {...props} value={data.name} onChange={(e) => setData('name', e.target.value)} />
@@ -81,7 +83,28 @@ export function ProductForm({
                         )}
                     </Field>
 
-                    <Field label="Description" error={errors.description} className="sm:col-span-3">
+                    <Field label="Product color" error={errors.brand_color} hint="Used for the product avatar and visual accents.">
+                        {(props) => (
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="color"
+                                    aria-label="Choose product color"
+                                    value={data.brand_color}
+                                    onChange={(e) => setData('brand_color', e.target.value.toUpperCase())}
+                                    className="h-9 w-12 cursor-pointer p-1"
+                                />
+                                <Input
+                                    {...props}
+                                    value={data.brand_color}
+                                    onChange={(e) => setData('brand_color', e.target.value.toUpperCase())}
+                                    placeholder="#3B82F6"
+                                    className="num uppercase"
+                                />
+                            </div>
+                        )}
+                    </Field>
+
+                    <Field label="Description" error={errors.description} className="sm:col-span-4">
                         {(props) => (
                             <Textarea
                                 {...props}
@@ -91,7 +114,7 @@ export function ProductForm({
                         )}
                     </Field>
 
-                    <div className="sm:col-span-3">
+                    <div className="sm:col-span-4">
                         <Toggle
                             label="Active"
                             hint="Inactive products stay in history but cannot be selected for new subscriptions."

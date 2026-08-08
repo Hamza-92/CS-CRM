@@ -1,17 +1,20 @@
-import { Head, Link } from '@inertiajs/react';
-import { Archive, Plus, Search } from 'lucide-react';
-import { ProductsTable } from '@/components/products/products-table';
+import { Head, Link, router } from '@inertiajs/react';
+import { Archive, FileDown, FileUp, LayoutGrid, List, Plus, Search } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ProductsGrid, ProductsTable } from '@/components/products/products-table';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/field';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useAuth } from '@/hooks/use-auth';
 import { useFilters } from '@/hooks/use-filters';
+import { usePersistedState } from '@/hooks/use-persisted-state';
 import AppLayout from '@/layouts/app-layout';
 import type { Paginated, Product } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface Props {
     products: Paginated<Product>;
@@ -28,6 +31,26 @@ export default function ProductsIndex({ products, filters }: Props) {
         per_page: filters.per_page,
     });
     const hasFilters = Boolean(values.search || values.status);
+    const [activeView, setActiveView] = usePersistedState<'list' | 'grid'>('crm.products.view', 'list');
+    const importRef = useRef<HTMLInputElement>(null);
+    const [importing, setImporting] = useState(false);
+    const exportParams = new URLSearchParams();
+    if (values.search) exportParams.set('search', String(values.search));
+    if (values.status) exportParams.set('status', String(values.status));
+    const exportHref = `/products/export${exportParams.toString() ? `?${exportParams.toString()}` : ''}`;
+
+    function importProducts(file: File | undefined) {
+        if (!file) return;
+
+        const form = new FormData();
+        form.append('file', file);
+        setImporting(true);
+        router.post('/products/import', form, {
+            forceFormData: true,
+            preserveScroll: true,
+            onFinish: () => setImporting(false),
+        });
+    }
 
     return (
         <AppLayout>
@@ -37,6 +60,16 @@ export default function ProductsIndex({ products, filters }: Props) {
                 badge={<Badge tone="neutral" size="sm">{products.total}</Badge>}
                 actions={
                     <div className="flex items-center gap-2">
+                        <a href={exportHref} download="products.csv" aria-label="Export products" className={buttonVariants({ variant: 'secondary' })}>
+                            <FileDown />
+                            Export
+                        </a>
+                        {(can('products.create') || can('products.manage')) && (
+                            <Button variant="secondary" disabled={importing} onClick={() => importRef.current?.click()}>
+                                <FileUp />
+                                Import
+                            </Button>
+                        )}
                         {(can('products.archive') || can('products.manage')) && (
                             <Link href="/products/archived"><Button variant="secondary"><Archive /> Archived products</Button></Link>
                         )}
@@ -45,6 +78,16 @@ export default function ProductsIndex({ products, filters }: Props) {
                         )}
                     </div>
                 }
+            />
+            <input
+                ref={importRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(event) => {
+                    importProducts(event.target.files?.[0]);
+                    event.currentTarget.value = '';
+                }}
             />
 
             <Card className="mb-4 p-4">
@@ -63,19 +106,30 @@ export default function ProductsIndex({ products, filters }: Props) {
                         />
                     </div>
                     {hasFilters && <button type="button" onClick={() => setMany({ search: '', status: '' })} className="text-xs font-medium text-brand hover:underline">Clear filters</button>}
+                    <div className="ml-auto flex rounded-md border border-line bg-surface p-0.5">
+                        <button type="button" aria-label="List view" onClick={() => setActiveView('list')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'list' ? 'bg-brand text-white' : 'text-ink-3 hover:bg-surface-3')}><List className="size-4" /></button>
+                        <button type="button" aria-label="Grid view" onClick={() => setActiveView('grid')} className={cn('flex h-7 items-center justify-center rounded px-2 transition-colors', activeView === 'grid' ? 'bg-brand text-white' : 'text-ink-3 hover:bg-surface-3')}><LayoutGrid className="size-4" /></button>
+                    </div>
                 </div>
             </Card>
 
-            <Card>
-                <ProductsTable
-                    products={products}
-                    canEdit={can('products.edit') || can('products.manage')}
-                    canArchive={can('products.archive') || can('products.manage')}
-                    sort={{ column: filters.sort, direction: filters.direction }}
-                    onSortChange={(column, direction) => setMany({ sort: column, direction })}
-                />
-                <Pagination meta={products} perPage={Number(values.per_page ?? 10)} onPerPageChange={(value) => set('per_page', value)} />
-            </Card>
+            {activeView === 'list' ? (
+                <Card>
+                    <ProductsTable
+                        products={products}
+                        canEdit={can('products.edit') || can('products.manage')}
+                        canArchive={can('products.archive') || can('products.manage')}
+                        sort={{ column: filters.sort, direction: filters.direction }}
+                        onSortChange={(column, direction) => setMany({ sort: column, direction })}
+                    />
+                    <Pagination meta={products} perPage={Number(values.per_page ?? 10)} onPerPageChange={(value) => set('per_page', value)} />
+                </Card>
+            ) : (
+                <div>
+                    <ProductsGrid products={products} canEdit={can('products.edit') || can('products.manage')} canArchive={can('products.archive') || can('products.manage')} />
+                    <Card className="mt-4"><Pagination meta={products} perPage={Number(values.per_page ?? 10)} onPerPageChange={(value) => set('per_page', value)} /></Card>
+                </div>
+            )}
         </AppLayout>
     );
 }

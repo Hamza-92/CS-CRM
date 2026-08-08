@@ -35,6 +35,7 @@ import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useFilters } from '@/hooks/use-filters';
 import { useAuth } from '@/hooks/use-auth';
+import { usePersistedState } from '@/hooks/use-persisted-state';
 import AppLayout from '@/layouts/app-layout';
 import type { ManagedUser, Paginated, RoleOption } from '@/types';
 import { shortDate } from '@/lib/format';
@@ -66,7 +67,7 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
     const [viewing, setViewing] = useState<ManagedUser | null>(null);
     const [resetting, setResetting] = useState<ManagedUser | null>(null);
     const [confirmation, setConfirmation] = useState<{ user: ManagedUser; action: 'status' | 'delete' } | null>(null);
-    const [activeView, setActiveView] = useState<'list' | 'grid'>('list');
+    const [activeView, setActiveView] = usePersistedState<'list' | 'grid'>('crm.users.view', 'list');
     const hasFilters = Boolean(values.search || values.status || values.role);
 
     function openCreate() {

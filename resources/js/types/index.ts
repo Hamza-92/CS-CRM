@@ -110,6 +110,7 @@ export interface Product {
     id: number;
     name: string;
     code: string;
+    brand_color: string | null;
     description: string | null;
     is_active: boolean;
     technical_owner_id: number | null;

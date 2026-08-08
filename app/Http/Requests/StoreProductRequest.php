@@ -20,6 +20,7 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'brand_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
             'code' => [
                 'required', 'string', 'max:32', 'regex:/^[A-Za-z0-9\-_]+$/',
                 Rule::unique('products', 'code')->withoutTrashed(),

@@ -17,6 +17,7 @@ use Spatie\Permission\Models\Role;
 #[Fillable([
     'name',
     'code',
+    'brand_color',
     'description',
     'is_active',
     'technical_owner_id',
