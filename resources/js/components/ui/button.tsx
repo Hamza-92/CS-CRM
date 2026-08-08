@@ -19,7 +19,7 @@ const button = cva(
                 sm: 'h-8 px-2.5 text-2xs [&_svg]:size-3.5',
                 md: 'h-9 px-3 text-xs [&_svg]:size-4',
                 lg: 'h-10 px-4 text-xs [&_svg]:size-4',
-                icon: 'size-9 [&_svg]:size-4',
+                icon: 'size-8 [&_svg]:size-4',
                 'icon-sm': 'size-8 [&_svg]:size-4',
             },
         },

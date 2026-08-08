@@ -9,6 +9,7 @@ use App\Http\Controllers\FollowUpController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\DealStageController;
 use App\Http\Controllers\LoginHistoryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
@@ -160,6 +161,9 @@ Route::middleware('auth')->group(function () {
     Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
     Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     Route::get('login-history', LoginHistoryController::class)->name('login-history.index');
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

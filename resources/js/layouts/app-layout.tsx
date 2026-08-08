@@ -282,13 +282,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
                     <div className="flex-1" />
 
-                    <button
-                        type="button"
-                        aria-label="Notifications"
+                    <Link
+                        href="/notifications"
+                        aria-label={`Notifications${page.props.notifications?.unread ? `, ${page.props.notifications.unread} unread` : ''}`}
                         className="relative flex size-9 shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors hover:bg-surface-3 hover:text-ink"
                     >
                         <Bell className="size-4" />
-                    </button>
+                        {Boolean(page.props.notifications?.unread) && <span className="absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-bad text-[8px] font-bold text-white ring-2 ring-surface">{page.props.notifications.unread > 9 ? '9+' : page.props.notifications.unread}</span>}
+                    </Link>
 
                     <button
                         type="button"

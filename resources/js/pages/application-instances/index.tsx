@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Archive, ArrowUpRight, Box, CheckCircle2, Clock3, LayoutGrid, List, PauseCircle, Plus, Search } from 'lucide-react';
+import { Archive, Box, CheckCircle2, Clock3, Eye, LayoutGrid, List, PauseCircle, Plus, Search } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/field';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Tooltip } from '@/components/ui/tooltip';
 import { StatCard } from '@/components/stat-card';
 import { useAuth } from '@/hooks/use-auth';
 import { useFilters } from '@/hooks/use-filters';
@@ -16,6 +17,7 @@ import type { ApplicationInstance, Paginated, ProductRef } from '@/types';
 
 type Ref = { id: number; name: string; business?: string | null; email?: string | null };
 const tone: Record<string, 'ok' | 'warn' | 'bad' | 'neutral'> = { active: 'ok', planned: 'warn', paused: 'bad', retired: 'neutral' };
+function ArrowUpRight({ className: _className }: { className?: string }) { return <Tooltip label="View"><span className="flex size-8 items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink"><Eye className="size-4" /></span></Tooltip>; }
 
 function InstanceCard({ instance }: { instance: ApplicationInstance }) {
     const accent = instance.product?.brand_color || '#3b82f6';

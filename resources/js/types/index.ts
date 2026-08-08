@@ -83,6 +83,7 @@ export type Ability =
 
 export interface SharedProps {
     app: { name: string; theme: 'light' | 'dark' };
+    notifications: { unread: number };
     auth: {
         user: AuthUser | null;
         can: Partial<Record<Ability, boolean>>;

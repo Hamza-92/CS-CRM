@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Archive, ArrowUpRight, CalendarClock, CircleAlert, CircleCheck, FileClock, LayoutGrid, List, Plus, Search } from 'lucide-react';
+import { Archive, CalendarClock, CircleAlert, CircleCheck, Eye, FileClock, LayoutGrid, List, Plus, Search } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { StatCard } from '@/components/stat-card';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/field';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Tooltip } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/use-auth';
 import { useFilters } from '@/hooks/use-filters';
 import { usePersistedState } from '@/hooks/use-persisted-state';
@@ -17,6 +18,7 @@ import type { Paginated, Subscription } from '@/types';
 type InstanceOption = { id: number; name: string; customer?: { name: string; business?: string | null } | null };
 const statusTone: Record<string, 'ok' | 'warn' | 'bad' | 'info' | 'neutral'> = { trialing: 'info', active: 'ok', past_due: 'bad', paused: 'warn', expired: 'neutral', cancelled: 'neutral' };
 const label = (value: string) => value.replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+function ArrowUpRight({ className: _className }: { className?: string }) { return <Tooltip label="View"><span className="flex size-8 items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink"><Eye className="size-4" /></span></Tooltip>; }
 
 function SubscriptionCard({ subscription }: { subscription: Subscription }) {
     return <Link href={`/subscriptions/${subscription.id}`} className="group block"><Card className="h-full p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="truncate font-semibold text-ink">{subscription.plan?.name || 'Subscription'}</div><div className="mt-0.5 truncate text-sm text-ink-3">{subscription.application_instance?.name}</div></div><Badge tone={statusTone[subscription.status] ?? 'neutral'} size="sm">{subscription.status_label ?? label(subscription.status)}</Badge></div><div className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-3 text-xs"><div><div className="text-ink-3">Customer</div><div className="mt-0.5 truncate text-ink-2">{subscription.application_instance?.customer?.business || subscription.application_instance?.customer?.name}</div></div><div><div className="text-ink-3">Renewal</div><div className="mt-0.5 text-ink-2">{subscription.renewal_at ? new Date(subscription.renewal_at).toLocaleDateString() : 'No renewal'}</div></div></div><div className="mt-3 flex items-center justify-between text-xs text-ink-3"><span>{subscription.kind_label ?? label(subscription.kind)}{subscription.days_remaining !== null && subscription.days_remaining !== undefined ? ` · ${subscription.days_remaining}d left` : ''}</span><ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div></Card></Link>;
