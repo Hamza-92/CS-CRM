@@ -102,7 +102,13 @@ class UserController extends Controller
 
     public function toggleStatus(Request $request, User $user): RedirectResponse
     {
-        abort_if($request->user()->is($user), 403, 'You cannot change your own status.');
+        if ($request->user()?->is($user)) {
+            return back()->with('error', 'You cannot change your own status.');
+        }
+
+        if ($user->hasRole(RoleName::SuperAdmin->value) && ! $request->user()?->hasRole(RoleName::SuperAdmin->value)) {
+            return back()->with('error', 'The Super Admin account is protected.');
+        }
 
         Gate::authorize('toggleStatus', $user);
 
@@ -113,7 +119,13 @@ class UserController extends Controller
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
-        abort_if($request->user()->is($user), 403, 'You cannot delete your own account.');
+        if ($request->user()?->is($user)) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        if ($user->hasRole(RoleName::SuperAdmin->value) && ! $request->user()?->hasRole(RoleName::SuperAdmin->value)) {
+            return back()->with('error', 'The Super Admin account is protected.');
+        }
 
         Gate::authorize('delete', $user);
 

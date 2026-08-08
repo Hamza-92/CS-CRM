@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\RoleName;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
@@ -12,6 +14,18 @@ class UpdateUserRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()->can('update', $this->route('user'));
+    }
+
+    protected function failedAuthorization(): void
+    {
+        $actor = $this->user();
+        $target = $this->route('user');
+
+        if ($target instanceof User && $target->hasRole(RoleName::SuperAdmin->value) && ! $actor?->hasRole(RoleName::SuperAdmin->value)) {
+            throw new HttpResponseException(back()->with('error', 'The Super Admin account is protected.'));
+        }
+
+        parent::failedAuthorization();
     }
 
     /**

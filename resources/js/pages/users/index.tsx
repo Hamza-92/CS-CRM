@@ -51,7 +51,7 @@ const actionButton =
     'flex size-8 items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-4';
 
 export default function UsersIndex({ users, roles, filters, can }: Props) {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, hasRole } = useAuth();
     const { values, set, setMany } = useFilters('/users', {
         search: filters.search,
         status: filters.status,
@@ -75,16 +75,46 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
     }
 
     function openEdit(user: ManagedUser) {
+        if (isProtectedTarget(user)) return;
+
         setEditing(user);
         setFormOpen(true);
     }
 
     function toggleStatus(user: ManagedUser) {
+        if (isSelf(user) || isProtectedTarget(user)) return;
+
         setConfirmation({ user, action: 'status' });
     }
 
     function remove(user: ManagedUser) {
+        if (isSelf(user) || isProtectedTarget(user)) return;
+
         setConfirmation({ user, action: 'delete' });
+    }
+
+    function isSelf(user: ManagedUser) {
+        return currentUser?.id === user.id;
+    }
+
+    function isProtectedTarget(user: ManagedUser) {
+        return user.roles?.some((role) => role.name === 'super_admin') === true && !hasRole('super_admin');
+    }
+
+    function actionTooltip(user: ManagedUser, action: 'edit' | 'reset' | 'status' | 'delete') {
+        if (isSelf(user)) {
+            return action === 'delete'
+                ? 'You cannot delete your own account'
+                : action === 'status'
+                  ? 'You cannot change your own status'
+                  : action === 'reset'
+                    ? 'You cannot reset your own password here'
+                    : 'You can edit your own profile';
+        }
+
+        if (isProtectedTarget(user)) return 'Super Admin is protected';
+
+        return action === 'edit' ? 'Edit' : action === 'reset' ? 'Reset password' : action === 'status' ? (user.is_active ? 'Deactivate' : 'Activate') : 'Delete';
     }
 
     function confirmAction() {
@@ -291,23 +321,25 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                                             <div className="flex items-center justify-end gap-0.5">
                                                 {can.manage && (
                                                     <>
-                                                        <Tooltip label="Reset password">
+                                                        <Tooltip label={actionTooltip(user, 'reset')}>
                                                             <button
                                                                 type="button"
                                                                 aria-label={`Reset password for ${user.name}`}
                                                                 onClick={() => setResetting(user)}
-                                                                className={actionButton}
+                                                                disabled={isSelf(user) || isProtectedTarget(user)}
+                                                                className={cn(actionButton, (isSelf(user) || isProtectedTarget(user)) && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}
                                                             >
                                                                 <KeyRound />
                                                             </button>
                                                         </Tooltip>
 
-                                                        <Tooltip label={user.is_active ? 'Deactivate' : 'Activate'}>
+                                                        <Tooltip label={actionTooltip(user, 'status')}>
                                                             <button
                                                                 type="button"
                                                                 aria-label={`Toggle status for ${user.name}`}
                                                                 onClick={() => toggleStatus(user)}
-                                                                className={actionButton}
+                                                                disabled={isSelf(user) || isProtectedTarget(user)}
+                                                                className={cn(actionButton, (isSelf(user) || isProtectedTarget(user)) && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}
                                                             >
                                                                 {user.is_active ? <LockOpen /> : <Lock />}
                                                             </button>
@@ -328,27 +360,28 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
 
                                                 {can.manage && (
                                                     <>
-                                                        <Tooltip label="Edit">
+                                                        <Tooltip label={actionTooltip(user, 'edit')}>
                                                             <button
                                                                 type="button"
                                                                 aria-label={`Edit ${user.name}`}
                                                                 onClick={() => openEdit(user)}
-                                                                className={actionButton}
+                                                                disabled={isProtectedTarget(user)}
+                                                                className={cn(actionButton, isProtectedTarget(user) && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}
                                                             >
                                                                 <Pencil />
                                                             </button>
                                                         </Tooltip>
 
-                                                        <Tooltip label={currentUser?.id === user.id ? 'You cannot delete your own account' : 'Delete'}>
+                                                        <Tooltip label={actionTooltip(user, 'delete')}>
                                                             <button
                                                                 type="button"
                                                                 aria-label={`Delete ${user.name}`}
                                                                 onClick={() => remove(user)}
-                                                                disabled={currentUser?.id === user.id}
+                                                                disabled={isSelf(user) || isProtectedTarget(user)}
                                                                 className={cn(
                                                                     actionButton,
                                                                     'hover:bg-bad-wash hover:text-bad',
-                                                                    currentUser?.id === user.id && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3',
+                                                                    (isSelf(user) || isProtectedTarget(user)) && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3',
                                                                 )}
                                                             >
                                                                 <Trash2 />
@@ -389,10 +422,10 @@ export default function UsersIndex({ users, roles, filters, can }: Props) {
                                     <div className="flex items-center gap-0.5">
                                         <Tooltip label="View"><button type="button" onClick={() => setViewing(user)} className={cn(actionButton, 'text-brand hover:bg-brand-wash hover:text-brand')}><Eye /></button></Tooltip>
                                         {can.manage && <>
-                                            <Tooltip label="Edit"><button type="button" onClick={() => openEdit(user)} className={cn(actionButton, 'text-warn hover:bg-warn-wash hover:text-warn')}><Pencil /></button></Tooltip>
-                                            <Tooltip label="Reset password"><button type="button" onClick={() => setResetting(user)} className={cn(actionButton, 'text-brand hover:bg-brand-wash hover:text-brand')}><KeyRound /></button></Tooltip>
-                                            <Tooltip label={user.is_active ? 'Deactivate' : 'Activate'}><button type="button" onClick={() => toggleStatus(user)} className={cn(actionButton, 'text-warn hover:bg-warn-wash hover:text-warn')}>{user.is_active ? <Lock /> : <LockOpen />}</button></Tooltip>
-                                            <Tooltip label={currentUser?.id === user.id ? 'You cannot delete your own account' : 'Delete'}><button type="button" onClick={() => remove(user)} disabled={currentUser?.id === user.id} className={cn(actionButton, 'text-bad hover:bg-bad-wash hover:text-bad', currentUser?.id === user.id && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}><Trash2 /></button></Tooltip>
+                                            <Tooltip label={actionTooltip(user, 'edit')}><button type="button" onClick={() => openEdit(user)} disabled={isProtectedTarget(user)} className={cn(actionButton, 'text-warn hover:bg-warn-wash hover:text-warn', isProtectedTarget(user) && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}><Pencil /></button></Tooltip>
+                                            <Tooltip label={actionTooltip(user, 'reset')}><button type="button" onClick={() => setResetting(user)} disabled={isSelf(user) || isProtectedTarget(user)} className={cn(actionButton, 'text-brand hover:bg-brand-wash hover:text-brand', (isSelf(user) || isProtectedTarget(user)) && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}><KeyRound /></button></Tooltip>
+                                            <Tooltip label={actionTooltip(user, 'status')}><button type="button" onClick={() => toggleStatus(user)} disabled={isSelf(user) || isProtectedTarget(user)} className={cn(actionButton, 'text-warn hover:bg-warn-wash hover:text-warn', (isSelf(user) || isProtectedTarget(user)) && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}>{user.is_active ? <Lock /> : <LockOpen />}</button></Tooltip>
+                                            <Tooltip label={actionTooltip(user, 'delete')}><button type="button" onClick={() => remove(user)} disabled={isSelf(user) || isProtectedTarget(user)} className={cn(actionButton, 'text-bad hover:bg-bad-wash hover:text-bad', (isSelf(user) || isProtectedTarget(user)) && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-3')}><Trash2 /></button></Tooltip>
                                         </>}
                                     </div>
                                     {user.roles?.[0] ? (

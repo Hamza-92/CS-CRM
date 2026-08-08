@@ -58,10 +58,13 @@ class RoleController extends Controller
         return Inertia::render('roles/create', ['permissions' => $this->permissionCatalog()]);
     }
 
-    public function edit(Request $request, Role $role): Response
+    public function edit(Request $request, Role $role): Response|RedirectResponse
     {
         $this->authorizeManage($request);
-        abort_if($role->name === RoleName::SuperAdmin->value, 403);
+
+        if ($role->name === RoleName::SuperAdmin->value) {
+            return redirect()->route('roles.index')->with('error', 'The Super Admin role is protected.');
+        }
 
         $role->load('permissions:id,name');
 
