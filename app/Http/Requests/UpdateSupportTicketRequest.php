@@ -17,7 +17,7 @@ class UpdateSupportTicketRequest extends FormRequest
             'assigned_to_id' => ['nullable', 'integer', Rule::exists('users', 'id')->whereNull('deleted_at')],
             'subject' => ['required', 'string', 'max:180'], 'description' => ['required', 'string', 'max:20000'],
             'category' => ['required', Rule::in(SupportTicket::CATEGORIES)], 'priority' => ['required', Rule::in(SupportTicket::PRIORITIES)], 'status' => ['required', Rule::in(SupportTicket::STATUSES)],
-            'due_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date'], 'resolution_notes' => ['nullable', 'string', 'max:5000'],
         ];
     }
 }

@@ -413,12 +413,17 @@ export interface SupportTicket {
     status: 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed';
     status_label?: string;
     due_at: string | null;
+    waiting_at?: string | null;
+    reopened_at?: string | null;
     resolved_at: string | null;
+    resolved_by?: UserRef | null;
+    resolution_notes?: string | null;
     closed_at: string | null;
     is_overdue?: boolean;
     customer: { id: number; name: string; business: string | null; email?: string | null } | null;
     application_instance: ApplicationInstance | null;
     assigned_to?: UserRef | null;
+    tasks?: Array<{ id: number; task_number: string; title: string; status: string; priority: string; due_at: string | null; assigned_to?: UserRef | null }>;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;

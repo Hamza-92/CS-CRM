@@ -29,22 +29,22 @@ class SupportTicketController extends Controller
     public function store(StoreSupportTicketRequest $request, AssignmentRouter $router): RedirectResponse
     {
         $data = $request->validated(); $data['assigned_to_id'] = $router->forSupportTicket($data)?->id; $data['ticket_number'] = $this->nextNumber(); $data['created_by_id'] = $request->user()->id;
-        $ticket = SupportTicket::create($this->timestamps($data));
+        $ticket = SupportTicket::create($this->timestamps($data, $request->user()->id));
         return redirect()->route('support-tickets.show', $ticket)->with('success', "Ticket {$ticket->ticket_number} created.");
     }
 
     public function show(Request $request, SupportTicket $supportTicket): Response
     {
         Gate::authorize('view', $supportTicket);
-        $supportTicket->load(['customer:id,name,business,email', 'applicationInstance:id,name,customer_id,product_id,environment,status', 'applicationInstance.product:id,name,code,brand_color', 'assignedTo:id,name,email,avatar_path', 'createdBy:id,name,email,avatar_path']);
-        return Inertia::render('support-tickets/show', ['ticket' => $this->payload($supportTicket), 'activities' => $supportTicket->activities()->with('user:id,name,avatar_path')->limit(20)->get(), 'can' => ['update' => $request->user()->can('update', $supportTicket), 'archive' => $request->user()->can('delete', $supportTicket)]]);
+        $supportTicket->load(['customer:id,name,business,email', 'applicationInstance:id,name,customer_id,product_id,environment,status', 'applicationInstance.product:id,name,code,brand_color', 'assignedTo:id,name,email,avatar_path', 'createdBy:id,name,email,avatar_path', 'resolvedBy:id,name,email,avatar_path', 'tasks:id,support_ticket_id,task_number,title,status,priority,due_at,assigned_to_id', 'tasks.assignedTo:id,name,avatar_path']);
+        return Inertia::render('support-tickets/show', ['ticket' => $this->payload($supportTicket), 'activities' => $supportTicket->activities()->with('user:id,name,avatar_path')->limit(20)->get(), 'can' => ['update' => $request->user()->can('update', $supportTicket), 'archive' => $request->user()->can('delete', $supportTicket), 'create_task' => $request->user()->can('create', \App\Models\WorkTask::class)]]);
     }
 
     public function edit(SupportTicket $supportTicket): Response { Gate::authorize('update', $supportTicket); return Inertia::render('support-tickets/edit', [...$this->options(), 'ticket' => $this->payload($supportTicket)]); }
 
     public function update(UpdateSupportTicketRequest $request, SupportTicket $supportTicket, ActivityLogger $logger): RedirectResponse
     {
-        $before = $supportTicket->only(['status', 'priority', 'assigned_to_id']); $supportTicket->update($this->timestamps($request->validated())); $after = $supportTicket->only(array_keys($before));
+        $before = $supportTicket->only(['status', 'priority', 'assigned_to_id']); $supportTicket->update($this->timestamps($request->validated(), $request->user()->id, $supportTicket)); $after = $supportTicket->only(array_keys($before));
         if ($before['status'] !== $after['status']) $logger->log('support_ticket.status_changed', $supportTicket, 'Support ticket status changed', ['old' => ['status' => $before['status']], 'new' => ['status' => $after['status']]]);
         if ($before['assigned_to_id'] !== $after['assigned_to_id']) $logger->log('support_ticket.assigned', $supportTicket, 'Support ticket assignment changed', ['old' => ['assigned_to_id' => $before['assigned_to_id']], 'new' => ['assigned_to_id' => $after['assigned_to_id']]]);
         return redirect()->route('support-tickets.show', $supportTicket)->with('success', "Ticket {$supportTicket->ticket_number} updated.");
@@ -53,7 +53,7 @@ class SupportTicketController extends Controller
     public function updateStatus(Request $request, SupportTicket $supportTicket, ActivityLogger $logger): RedirectResponse
     {
         Gate::authorize('update', $supportTicket); $status = $request->validate(['status' => ['required', \Illuminate\Validation\Rule::in(SupportTicket::STATUSES)]])['status'];
-        $old = $supportTicket->status; $supportTicket->update($this->timestamps(['status' => $status]));
+        $old = $supportTicket->status; $supportTicket->update($this->timestamps(['status' => $status], $request->user()->id, $supportTicket));
         if ($old !== $status) $logger->log('support_ticket.status_changed', $supportTicket, 'Support ticket status changed', ['old' => ['status' => $old], 'new' => ['status' => $status]]);
         return back()->with('success', 'Ticket status updated.');
     }
@@ -73,6 +73,17 @@ class SupportTicketController extends Controller
     private function instances(): Collection { return ApplicationInstance::query()->with(['customer:id,name,business', 'product:id,name,code'])->where('status', '!=', 'retired')->orderBy('name')->get(['id', 'name', 'customer_id', 'product_id', 'environment', 'status']); }
     private function assignees(): Collection { return User::query()->active()->orderBy('name')->get(['id', 'name', 'email', 'avatar_path']); }
     private function nextNumber(): string { $number = SupportTicket::withTrashed()->max('id') + 1; return 'TKT-'.now()->format('Y').'-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT); }
-    private function timestamps(array $data): array { if (($data['status'] ?? null) === 'resolved' && ! isset($data['resolved_at'])) $data['resolved_at'] = now(); if (($data['status'] ?? null) === 'closed' && ! isset($data['closed_at'])) $data['closed_at'] = now(); if (isset($data['status']) && $data['status'] !== 'resolved') $data['resolved_at'] = null; if (isset($data['status']) && $data['status'] !== 'closed') $data['closed_at'] = null; return $data; }
-    private function payload(SupportTicket $ticket): array { return [...$ticket->toArray(), 'status_label' => Str::headline($ticket->status), 'priority_label' => Str::headline($ticket->priority), 'category_label' => Str::headline($ticket->category), 'is_overdue' => $ticket->isOverdue(), 'customer' => $ticket->customer, 'application_instance' => $ticket->applicationInstance, 'assigned_to' => $ticket->assignedTo ? [...$ticket->assignedTo->toArray(), 'avatar_url' => $ticket->assignedTo->avatar_url] : null]; }
+    private function timestamps(array $data, ?int $userId = null, ?SupportTicket $existing = null): array
+    {
+        $status = $data['status'] ?? $existing?->status;
+        if ($status === 'waiting' && ! isset($data['waiting_at'])) $data['waiting_at'] = now();
+        if ($status !== 'waiting' && $existing?->status === 'waiting') $data['waiting_at'] = null;
+        if ($status === 'resolved' && ! isset($data['resolved_at'])) { $data['resolved_at'] = now(); $data['resolved_by_id'] = $userId; }
+        if ($status === 'closed' && ! isset($data['closed_at'])) $data['closed_at'] = now();
+        if (in_array($status, ['open', 'in_progress', 'waiting'], true) && in_array($existing?->status, ['resolved', 'closed'], true)) {
+            $data['reopened_at'] = now(); $data['resolved_at'] = null; $data['resolved_by_id'] = null; $data['closed_at'] = null;
+        }
+        return $data;
+    }
+    private function payload(SupportTicket $ticket): array { return [...$ticket->toArray(), 'status_label' => Str::headline($ticket->status), 'priority_label' => Str::headline($ticket->priority), 'category_label' => Str::headline($ticket->category), 'is_overdue' => $ticket->isOverdue(), 'customer' => $ticket->customer, 'application_instance' => $ticket->applicationInstance, 'assigned_to' => $ticket->assignedTo ? [...$ticket->assignedTo->toArray(), 'avatar_url' => $ticket->assignedTo->avatar_url] : null, 'resolved_by' => $ticket->resolvedBy ? [...$ticket->resolvedBy->toArray(), 'avatar_url' => $ticket->resolvedBy->avatar_url] : null, 'tasks' => $ticket->tasks->map(fn (\App\Models\WorkTask $task) => [...$task->toArray(), 'assigned_to' => $task->assignedTo ? ['id' => $task->assignedTo->id, 'name' => $task->assignedTo->name, 'avatar_url' => $task->assignedTo->avatar_url] : null])->values()->all()]; }
 }
