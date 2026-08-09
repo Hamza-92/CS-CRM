@@ -60,8 +60,13 @@ class PaymentController extends Controller
     public function markPaid(Payment $payment, ActivityLogger $logger): RedirectResponse
     {
         Gate::authorize('update', $payment);
+        $payment->load('subscription');
         $payment->update(['status' => 'paid', 'paid_at' => today()->toDateString()]);
         $logger->log('payment.marked_paid', $payment, "Payment {$payment->invoice_number} marked as paid");
+        if ($payment->subscription && $payment->subscription->status === 'past_due') {
+            $payment->subscription->update(['status' => 'active']);
+            $logger->log('subscription.reactivated', $payment->subscription, 'Subscription reactivated after payment', ['payment_id' => $payment->id]);
+        }
         return back()->with('success', 'Payment marked as paid.');
     }
 

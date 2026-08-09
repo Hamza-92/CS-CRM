@@ -359,6 +359,21 @@ export interface Subscription {
     deleted_at: string | null;
 }
 
+export interface SubscriptionRenewal {
+    id: number;
+    previous_status: string | null;
+    status: string;
+    previous_ends_at: string | null;
+    starts_at: string;
+    ends_at: string | null;
+    amount: string | null;
+    currency: string | null;
+    plan: Plan | null;
+    payment: { id: number; invoice_number: string; amount: string; currency: string; status: string } | null;
+    created_by: { id: number; name: string } | null;
+    created_at: string;
+}
+
 export interface Payment {
     id: number;
     subscription_id: number;

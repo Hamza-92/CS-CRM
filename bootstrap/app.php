@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([__DIR__.'/../app/Console/Commands'])
     ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command('crm:sync-subscriptions')->dailyAt('00:10');
         $schedule->command('crm:send-reminders')->dailyAt('08:00');
     })
     ->withMiddleware(function (Middleware $middleware): void {

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateSubscriptionRequest;
 use App\Models\ApplicationInstance;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\SubscriptionRenewal;
 use App\Support\Audit\ActivityLogger;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,10 +43,24 @@ class SubscriptionController extends Controller
     public function show(Request $request, Subscription $subscription): Response
     {
         Gate::authorize('view', $subscription);
-        $subscription->load(['applicationInstance.customer:id,name,business,email', 'applicationInstance.product:id,name,code,brand_color', 'plan.product:id,name,code', 'applicationInstance.owner:id,name,email,avatar_path']);
+        $subscription->load(['applicationInstance.customer:id,name,business,email', 'applicationInstance.product:id,name,code,brand_color', 'plan.product:id,name,code', 'applicationInstance.owner:id,name,email,avatar_path', 'renewals.plan:id,name,code', 'renewals.payment:id,invoice_number,amount,currency,status', 'renewals.createdBy:id,name']);
         return Inertia::render('subscriptions/show', [
             'subscription' => $this->payload($subscription),
             'activities' => $subscription->activities()->with('user:id,name,avatar_path')->limit(20)->get(),
+            'renewals' => $subscription->renewals->map(fn (SubscriptionRenewal $renewal) => [
+                'id' => $renewal->id,
+                'previous_status' => $renewal->previous_status,
+                'status' => $renewal->status,
+                'previous_ends_at' => $renewal->previous_ends_at?->toISOString(),
+                'starts_at' => $renewal->starts_at?->toISOString(),
+                'ends_at' => $renewal->ends_at?->toISOString(),
+                'amount' => $renewal->amount,
+                'currency' => $renewal->currency,
+                'plan' => $renewal->plan,
+                'payment' => $renewal->payment,
+                'created_by' => $renewal->createdBy ? ['id' => $renewal->createdBy->id, 'name' => $renewal->createdBy->name] : null,
+                'created_at' => $renewal->created_at?->toISOString(),
+            ])->values()->all(),
             'can' => [
                 'update' => $request->user()->can('update', $subscription),
                 'archive' => $request->user()->can('delete', $subscription),
@@ -62,7 +78,10 @@ class SubscriptionController extends Controller
     public function update(UpdateSubscriptionRequest $request, Subscription $subscription, ActivityLogger $logger): RedirectResponse
     {
         $before = $subscription->only(['status', 'kind', 'plan_id', 'ends_at', 'renewal_at', 'auto_renew']);
-        $subscription->update($this->withDates($request->validated()));
+        $data = $this->withDates($request->validated());
+        if (($data['status'] ?? null) === 'cancelled' && empty($data['cancelled_at'])) $data['cancelled_at'] = today()->toDateString();
+        if (($data['status'] ?? null) !== 'cancelled') $data['cancelled_at'] = null;
+        $subscription->update($data);
         $after = $subscription->only(array_keys($before));
         if ($before['status'] !== $after['status']) {
             $logger->log('subscription.status_changed', $subscription, 'Subscription status changed', ['old' => ['status' => $before['status']], 'new' => ['status' => $after['status']]]);
@@ -73,14 +92,34 @@ class SubscriptionController extends Controller
         return redirect()->route('subscriptions.show', $subscription)->with('success', 'Subscription updated.');
     }
 
-    public function renew(Subscription $subscription, ActivityLogger $logger): RedirectResponse
+    public function renew(Request $request, Subscription $subscription, ActivityLogger $logger): RedirectResponse
     {
         Gate::authorize('update', $subscription);
-        $plan = $subscription->plan()->first(['id', 'duration_days', 'billing_cycle']);
+        $plan = $subscription->plan()->first(['id', 'duration_days', 'billing_cycle', 'price', 'currency']);
         $base = ($subscription->ends_at && $subscription->ends_at->isFuture()) ? $subscription->ends_at->copy() : today();
-        $endsAt = $plan?->duration_days ? $base->copy()->addDays($plan->duration_days) : null;
-        $subscription->update(['status' => 'active', 'starts_at' => $base->toDateString(), 'ends_at' => $endsAt?->toDateString(), 'renewal_at' => $endsAt?->toDateString(), 'cancelled_at' => null]);
-        $logger->log('subscription.renewed', $subscription, 'Subscription renewed', ['ends_at' => $endsAt?->toDateString()]);
+        $duration = $plan?->duration_days ?? $plan?->billing_cycle?->defaultDurationDays();
+        $endsAt = $duration ? $base->copy()->addDays($duration) : null;
+        $previousStatus = $subscription->status;
+        $previousEndsAt = $subscription->ends_at?->toDateString();
+        $payment = $subscription->payments()->where('status', 'paid')->whereDoesntHave('renewal')->latest('paid_at')->first();
+        DB::transaction(function () use ($subscription, $plan, $base, $endsAt, $previousStatus, $previousEndsAt, $payment, $request): void {
+            $subscription->update(['status' => 'active', 'starts_at' => $base->toDateString(), 'ends_at' => $endsAt?->toDateString(), 'renewal_at' => $endsAt?->toDateString(), 'cancelled_at' => null]);
+            SubscriptionRenewal::create([
+                'subscription_id' => $subscription->id,
+                'plan_id' => $plan?->id,
+                'payment_id' => $payment?->id,
+                'created_by_id' => $request->user()->id,
+                'previous_status' => $previousStatus,
+                'status' => 'active',
+                'previous_ends_at' => $previousEndsAt,
+                'starts_at' => $base->toDateString(),
+                'ends_at' => $endsAt?->toDateString(),
+                'amount' => $payment?->amount ?? $plan?->price,
+                'currency' => $payment?->currency ?? $plan?->currency,
+                'notes' => $payment ? "Linked payment {$payment->invoice_number}." : 'Renewed without a linked payment.',
+            ]);
+        });
+        $logger->log('subscription.renewed', $subscription, 'Subscription renewed', ['previous_status' => $previousStatus, 'previous_ends_at' => $previousEndsAt, 'ends_at' => $endsAt?->toDateString(), 'payment_id' => $payment?->id]);
         return back()->with('success', 'Subscription renewed.');
     }
 

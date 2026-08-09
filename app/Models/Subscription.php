@@ -33,6 +33,7 @@ class Subscription extends Model
     public function applicationInstance(): BelongsTo { return $this->belongsTo(ApplicationInstance::class); }
     public function plan(): BelongsTo { return $this->belongsTo(Plan::class); }
     public function payments(): HasMany { return $this->hasMany(Payment::class); }
+    public function renewals(): HasMany { return $this->hasMany(SubscriptionRenewal::class)->latest('created_at'); }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
