@@ -13,6 +13,7 @@ use App\Models\LeadStatusOption;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\Audit\ActivityLogger;
+use App\Services\DemoWorkflowService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,9 +43,13 @@ class LeadController extends Controller
         return Inertia::render('leads/create', $this->formOptions());
     }
 
-    public function store(StoreLeadRequest $request): RedirectResponse
+    public function store(StoreLeadRequest $request, DemoWorkflowService $demoWorkflow, ActivityLogger $logger): RedirectResponse
     {
         $lead = Lead::create($request->validated());
+
+        if ($lead->status === 'demo_required') {
+            $demoWorkflow->requestDemo($lead, $request->user(), $logger);
+        }
 
         return redirect()->route('leads.show', $lead)->with('success', "Lead {$lead->name} created.");
     }
@@ -93,7 +98,7 @@ class LeadController extends Controller
         return Inertia::render('leads/edit', ['lead' => $this->payload($lead), ...$this->formOptions()]);
     }
 
-    public function update(UpdateLeadRequest $request, Lead $lead, ActivityLogger $logger): RedirectResponse
+    public function update(UpdateLeadRequest $request, Lead $lead, ActivityLogger $logger, DemoWorkflowService $demoWorkflow): RedirectResponse
     {
         $lead->load('statusDefinition');
         $oldStatus = $lead->status;
@@ -107,6 +112,10 @@ class LeadController extends Controller
                 'old' => ['status' => $oldStatus, 'status_label' => $oldStatusLabel],
                 'new' => ['status' => $lead->status, 'status_label' => $newStatusLabel],
             ]);
+
+            if ($lead->status === 'demo_required') {
+                $demoWorkflow->requestDemo($lead, $request->user(), $logger);
+            }
         }
 
         return redirect()->route('leads.show', $lead)->with('success', "Lead {$lead->name} updated.");
@@ -154,7 +163,7 @@ class LeadController extends Controller
         return redirect()->route('customers.show', $customer)->with('success', "{$lead->name} converted to a customer.");
     }
 
-    public function updateStatus(Request $request, Lead $lead, ActivityLogger $logger): RedirectResponse
+    public function updateStatus(Request $request, Lead $lead, ActivityLogger $logger, DemoWorkflowService $demoWorkflow): RedirectResponse
     {
         abort_unless($request->user()->can('update', $lead), 403);
         $data = $request->validate(['status' => ['required', 'string', 'exists:lead_statuses,slug']]);
@@ -170,6 +179,10 @@ class LeadController extends Controller
                 'old' => ['status' => $oldStatus, 'status_label' => $oldStatusLabel],
                 'new' => ['status' => $lead->status, 'status_label' => $newStatusLabel],
             ]);
+
+            if ($lead->status === 'demo_required') {
+                $demoWorkflow->requestDemo($lead, $request->user(), $logger);
+            }
         }
 
         return back()->with('success', "Lead {$lead->name} moved to ".($lead->statusDefinition?->name ?? Str::headline($lead->status)).'.');

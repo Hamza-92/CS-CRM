@@ -409,6 +409,8 @@ export interface SupportTicket {
 export interface WorkTask {
     id: number;
     customer_id: number | null;
+    lead_id?: number | null;
+    product_id?: number | null;
     application_instance_id: number | null;
     support_ticket_id: number | null;
     assigned_to_id: number | null;
@@ -423,6 +425,8 @@ export interface WorkTask {
     completed_at: string | null;
     is_overdue?: boolean;
     customer: { id: number; name: string; business: string | null } | null;
+    lead?: { id: number; name: string; business: string | null; email?: string | null } | null;
+    product?: { id: number; name: string; code?: string | null } | null;
     application_instance: ApplicationInstance | null;
     support_ticket?: { id: number; ticket_number: string; subject: string } | null;
     assigned_to?: UserRef | null;
