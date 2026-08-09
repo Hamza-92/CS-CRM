@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\DataExportController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LeadController;
@@ -59,6 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
     Route::get('leads/archived', [LeadController::class, 'archived'])->name('leads.archived');
     Route::get('leads/create', [LeadController::class, 'create'])->name('leads.create');
+    Route::get('leads/export', [DataExportController::class, 'leads'])->name('leads.export');
     Route::post('leads', [LeadController::class, 'store'])->name('leads.store');
     Route::get('leads/{lead}', [LeadController::class, 'show'])->withTrashed()->name('leads.show');
     Route::get('leads/{lead}/edit', [LeadController::class, 'edit'])->withTrashed()->name('leads.edit');
@@ -104,6 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/archived', [CustomerController::class, 'archived'])->name('customers.archived');
     Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
+    Route::get('customers/export', [DataExportController::class, 'customers'])->name('customers.export');
     Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->withTrashed()->name('customers.show');
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->withTrashed()->name('customers.edit');
@@ -152,6 +155,7 @@ Route::middleware('auth')->group(function () {
     Route::get('tasks', [WorkTaskController::class, 'index'])->name('tasks.index');
     Route::get('tasks/archived', [WorkTaskController::class, 'archived'])->name('tasks.archived');
     Route::get('tasks/create', [WorkTaskController::class, 'create'])->name('tasks.create');
+    Route::get('tasks/export', [DataExportController::class, 'tasks'])->name('tasks.export');
     Route::post('tasks', [WorkTaskController::class, 'store'])->name('tasks.store');
     Route::get('tasks/{workTask}', [WorkTaskController::class, 'show'])->withTrashed()->name('tasks.show');
     Route::get('tasks/{workTask}/edit', [WorkTaskController::class, 'edit'])->withTrashed()->name('tasks.edit');
