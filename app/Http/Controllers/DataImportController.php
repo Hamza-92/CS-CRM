@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,6 +25,24 @@ class DataImportController extends Controller
             'leads' => $request->user()->can('create', Lead::class),
             'tasks' => $request->user()->can('create', WorkTask::class),
         ]]);
+    }
+
+    public function template(Request $request, string $type): StreamedResponse
+    {
+        $definitions = [
+            'customers' => [Customer::class, ['name', 'business', 'email', 'phone', 'city', 'status', 'owner_email']],
+            'leads' => [Lead::class, ['name', 'business', 'email', 'phone', 'source', 'status', 'owner_email']],
+            'tasks' => [WorkTask::class, ['title', 'priority', 'status', 'due_at', 'assigned_to_email']],
+        ];
+        abort_unless(isset($definitions[$type]), 404);
+        abort_unless($request->user()->can('create', $definitions[$type][0]), 403);
+        $headers = $definitions[$type][1];
+
+        return response()->streamDownload(function () use ($headers): void {
+            $handle = fopen('php://output', 'wb');
+            fputcsv($handle, $headers);
+            fclose($handle);
+        }, "{$type}-template.csv", ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function customers(Request $request, ActivityLogger $logger): RedirectResponse

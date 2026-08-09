@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('imports', [DataImportController::class, 'index'])->name('imports.index');
+    Route::get('imports/templates/{type}', [DataImportController::class, 'template'])->name('imports.template');
     Route::post('imports/customers', [DataImportController::class, 'customers'])->name('imports.customers');
     Route::post('imports/leads', [DataImportController::class, 'leads'])->name('imports.leads');
     Route::post('imports/tasks', [DataImportController::class, 'tasks'])->name('imports.tasks');

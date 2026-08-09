@@ -5,33 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\WorkTask;
+use App\Support\Audit\ActivityLogger;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DataExportController extends Controller
 {
-    public function customers(Request $request): StreamedResponse
+    public function customers(Request $request, ActivityLogger $logger): StreamedResponse
     {
         abort_unless($request->user()->can('viewAny', Customer::class), 403);
         $query = Customer::query()->with('owner:id,name')->when($request->filled('search'), fn ($q) => $q->search($request->string('search')->toString()))->when(in_array($request->string('status')->toString(), ['active', 'inactive'], true), fn ($q) => $q->where('status', $request->string('status')->toString()));
 
-        return $this->download('customers', ['ID', 'Name', 'Business', 'Email', 'Phone', 'City', 'Status', 'Owner', 'Created at'], $query->get()->map(fn (Customer $customer): array => [$customer->id, $customer->name, $customer->business, $customer->email, $customer->phone, $customer->city, $customer->status, $customer->owner?->name, $customer->created_at?->toDateTimeString()])->all());
+        $rows = $query->get()->map(fn (Customer $customer): array => [$customer->id, $customer->name, $customer->business, $customer->email, $customer->phone, $customer->city, $customer->status, $customer->owner?->name, $customer->created_at?->toDateTimeString()])->all();
+        $logger->log('customer.exported', null, 'Customers exported', ['count' => count($rows)]);
+        return $this->download('customers', ['ID', 'Name', 'Business', 'Email', 'Phone', 'City', 'Status', 'Owner', 'Created at'], $rows);
     }
 
-    public function leads(Request $request): StreamedResponse
+    public function leads(Request $request, ActivityLogger $logger): StreamedResponse
     {
         abort_unless($request->user()->can('viewAny', Lead::class), 403);
         $query = Lead::query()->with('owner:id,name')->when($request->filled('search'), fn ($q) => $q->search($request->string('search')->toString()))->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')->toString()));
 
-        return $this->download('leads', ['ID', 'Name', 'Business', 'Email', 'Phone', 'Source', 'Status', 'Owner', 'Next follow-up', 'Created at'], $query->get()->map(fn (Lead $lead): array => [$lead->id, $lead->name, $lead->business, $lead->email, $lead->phone, $lead->source, $lead->status, $lead->owner?->name, $lead->next_follow_up_at?->toDateTimeString(), $lead->created_at?->toDateTimeString()])->all());
+        $rows = $query->get()->map(fn (Lead $lead): array => [$lead->id, $lead->name, $lead->business, $lead->email, $lead->phone, $lead->source, $lead->status, $lead->owner?->name, $lead->next_follow_up_at?->toDateTimeString(), $lead->created_at?->toDateTimeString()])->all();
+        $logger->log('lead.exported', null, 'Leads exported', ['count' => count($rows)]);
+        return $this->download('leads', ['ID', 'Name', 'Business', 'Email', 'Phone', 'Source', 'Status', 'Owner', 'Next follow-up', 'Created at'], $rows);
     }
 
-    public function tasks(Request $request): StreamedResponse
+    public function tasks(Request $request, ActivityLogger $logger): StreamedResponse
     {
         abort_unless($request->user()->can('viewAny', WorkTask::class), 403);
         $query = WorkTask::query()->with('assignedTo:id,name')->when($request->filled('search'), fn ($q) => $q->search($request->string('search')->toString()))->when(in_array($request->string('status')->toString(), WorkTask::STATUSES, true), fn ($q) => $q->where('status', $request->string('status')->toString()));
 
-        return $this->download('tasks', ['ID', 'Task number', 'Title', 'Priority', 'Status', 'Due date', 'Assigned to', 'Created at'], $query->get()->map(fn (WorkTask $task): array => [$task->id, $task->task_number, $task->title, $task->priority, $task->status, $task->due_at?->toDateString(), $task->assignedTo?->name, $task->created_at?->toDateTimeString()])->all());
+        $rows = $query->get()->map(fn (WorkTask $task): array => [$task->id, $task->task_number, $task->title, $task->priority, $task->status, $task->due_at?->toDateString(), $task->assignedTo?->name, $task->created_at?->toDateTimeString()])->all();
+        $logger->log('task.exported', null, 'Tasks exported', ['count' => count($rows)]);
+        return $this->download('tasks', ['ID', 'Task number', 'Title', 'Priority', 'Status', 'Due date', 'Assigned to', 'Created at'], $rows);
     }
 
     private function download(string $name, array $headers, array $rows): StreamedResponse

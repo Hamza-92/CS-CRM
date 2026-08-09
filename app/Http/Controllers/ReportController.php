@@ -11,9 +11,9 @@ use App\Models\Payment;
 use App\Models\Subscription;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Http\StreamedResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
