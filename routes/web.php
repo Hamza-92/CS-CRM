@@ -27,6 +27,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\WorkTaskController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
@@ -42,6 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::post('imports/leads', [DataImportController::class, 'leads'])->name('imports.leads');
     Route::post('imports/tasks', [DataImportController::class, 'tasks'])->name('imports.tasks');
     Route::get('activity', ActivityController::class)->name('activity.index');
+    Route::get('search', SearchController::class)->name('search');
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');

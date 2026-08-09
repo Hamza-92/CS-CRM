@@ -28,7 +28,7 @@ import {
     X,
     type LucideIcon,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Flash } from '@/components/flash';
 import { ToastProvider } from '@/components/toast';
 import { UserMenu } from '@/components/user-menu';
@@ -39,6 +39,8 @@ import type { Ability, SharedProps } from '@/types';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'crm.sidebar.collapsed';
+
+type SearchResult = { type: string; icon: string; label: string; meta: string; href: string };
 
 interface NavItem {
     label: string;
@@ -210,11 +212,51 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searching, setSearching] = useState(false);
+    const searchRootRef = useRef<HTMLDivElement>(null);
     const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
         setCollapsed(window.localStorage.getItem(STORAGE_KEY) === '1');
     }, []);
+
+    useEffect(() => {
+        if (!searchOpen) return;
+        const handlePointerDown = (event: PointerEvent) => {
+            if (!searchRootRef.current?.contains(event.target as Node)) setSearchOpen(false);
+        };
+        document.addEventListener('pointerdown', handlePointerDown);
+        return () => document.removeEventListener('pointerdown', handlePointerDown);
+    }, [searchOpen]);
+
+    useEffect(() => {
+        const term = searchTerm.trim();
+        if (term.length < 2) {
+            setSearchResults([]);
+            setSearching(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => {
+            setSearching(true);
+            fetch(`/search?q=${encodeURIComponent(term)}`, { headers: { Accept: 'application/json' }, signal: controller.signal })
+                .then((response) => response.ok ? response.json() : { results: [] })
+                .then((payload: { results?: SearchResult[] }) => setSearchResults(payload.results ?? []))
+                .catch(() => { if (!controller.signal.aborted) setSearchResults([]); })
+                .finally(() => { if (!controller.signal.aborted) setSearching(false); });
+        }, 220);
+
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [searchTerm]);
+
+    const resultIcons: Record<string, LucideIcon> = { customer: ContactRound, lead: UserRoundSearch, deal: Handshake, product: Boxes, instance: Globe2, subscription: ReceiptText, ticket: LifeBuoy, task: ListChecks };
 
     function toggleCollapsed() {
         setCollapsed((value) => {
@@ -282,15 +324,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         <ToggleIcon className="size-4" />
                     </button>
 
-                    <div className="relative hidden max-w-xs flex-1 sm:block">
+                    <div ref={searchRootRef} className="relative hidden max-w-md flex-1 sm:block">
                         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
                         <input
                             type="search"
-                            disabled
-                            placeholder="Global search coming next"
+                            value={searchTerm}
+                            onChange={(event) => { setSearchTerm(event.target.value); setSearchOpen(true); }}
+                            onFocus={() => setSearchOpen(true)}
+                            onKeyDown={(event) => { if (event.key === 'Escape') setSearchOpen(false); }}
+                            placeholder="Search CRM"
                             aria-label="Global search"
-                            className="h-9 w-full cursor-not-allowed rounded-md border border-line bg-surface-2 pr-3 pl-8 text-xs text-ink placeholder:text-ink-3"
+                            className="h-9 w-full rounded-md border border-line bg-surface-2 pr-3 pl-8 text-xs text-ink outline-none transition-colors placeholder:text-ink-3 focus:border-brand/50 focus:ring-2 focus:ring-brand/10"
                         />
+                        {searchOpen && searchTerm.trim().length >= 2 && <div className="absolute top-11 left-0 z-50 w-[min(30rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-line bg-surface shadow-card">
+                            {searching ? <div className="px-3.5 py-4 text-center text-xs text-ink-3">Searching…</div> : searchResults.length === 0 ? <div className="px-3.5 py-4 text-center text-xs text-ink-3">No matching records</div> : <ul className="max-h-80 overflow-y-auto py-1">{searchResults.map((result) => { const Icon = resultIcons[result.icon] ?? Search; return <li key={`${result.type}-${result.href}`}><Link href={result.href} onClick={() => { setSearchOpen(false); setSearchTerm(''); }} className="flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-surface-2"><span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-brand-wash text-brand"><Icon className="size-3.5" /></span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-ink">{result.label}</span><span className="block truncate text-2xs text-ink-3">{result.type} · {result.meta}</span></span></Link></li>; })}</ul>}
+                        </div>}
                     </div>
 
                     <div className="flex-1" />

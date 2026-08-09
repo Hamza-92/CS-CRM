@@ -27,6 +27,8 @@ class DashboardController extends Controller
         $user = $request->user();
         $can = static fn (Permission $permission): bool => $user->can($permission->value);
         $today = CarbonImmutable::today();
+        $period = (int) $request->integer('period', 180);
+        $period = in_array($period, [30, 90, 180], true) ? $period : 180;
 
         $stats = [
             'customers' => $can(Permission::ViewCustomers) ? Customer::query()->where('status', 'active')->count() : null,
@@ -91,14 +93,54 @@ class DashboardController extends Controller
                 ])->values()->all();
         }
 
-        $trend = ['labels' => [], 'customers' => [], 'payments' => []];
-        for ($index = 5; $index >= 0; $index--) {
-            $month = $today->subMonths($index);
-            $start = $month->startOfMonth();
-            $end = $month->endOfMonth();
-            $trend['labels'][] = $month->format('M');
+        $trend = ['labels' => [], 'customers' => [], 'leads' => [], 'payments' => []];
+        $trendStart = $today->subDays($period - 1)->startOfDay();
+        $bucketDays = max(1, (int) floor($period / 6));
+        for ($index = 0; $index < 6; $index++) {
+            $start = $trendStart->addDays($index * $bucketDays);
+            $end = $index === 5 ? $today->endOfDay() : $start->addDays($bucketDays - 1)->endOfDay();
+            $trend['labels'][] = $start->format($period <= 90 ? 'M j' : 'M');
             $trend['customers'][] = $can(Permission::ViewCustomers) ? Customer::query()->whereBetween('created_at', [$start, $end])->count() : null;
+            $trend['leads'][] = $can(Permission::ViewLeads) ? Lead::query()->whereBetween('created_at', [$start, $end])->count() : null;
             $trend['payments'][] = $can(Permission::ViewPayments) ? Payment::query()->where('status', 'paid')->whereBetween('paid_at', [$start, $end])->count() : null;
+        }
+
+        $paymentSummary = ['collected' => null, 'outstanding' => null, 'partiallyPaid' => null];
+        if ($can(Permission::ViewPayments)) {
+            $paymentSummary = [
+                'collected' => (float) Payment::query()->where('status', 'paid')->sum('amount'),
+                'outstanding' => (float) Payment::query()->whereIn('status', ['pending', 'partially_paid'])->sum('amount'),
+                'partiallyPaid' => (float) Payment::query()->where('status', 'partially_paid')->sum('amount'),
+            ];
+        }
+
+        $workload = [];
+        if ($can(Permission::ViewUsers) && ($can(Permission::ViewTasks) || $can(Permission::ViewFollowUps) || $can(Permission::ViewSupportTickets))) {
+            $workload = User::query()->active()->orderBy('name')->limit(8)->get(['id', 'name'])->map(function (User $owner) use ($can): array {
+                return [
+                    'label' => $owner->name,
+                    'tasks' => $can(Permission::ViewTasks) ? WorkTask::query()->where('assigned_to_id', $owner->id)->whereIn('status', ['open', 'in_progress'])->count() : 0,
+                    'followUps' => $can(Permission::ViewFollowUps) ? FollowUp::query()->where('owner_id', $owner->id)->whereIn('status', ['pending', 'rescheduled'])->count() : 0,
+                    'tickets' => $can(Permission::ViewSupportTickets) ? SupportTicket::query()->where('assigned_to_id', $owner->id)->whereNotIn('status', ['resolved', 'closed'])->count() : 0,
+                ];
+            })->values()->all();
+        }
+
+        $renewals = [];
+        if ($can(Permission::ViewSubscriptions)) {
+            $renewals = Subscription::query()
+                ->with('applicationInstance:id,name')
+                ->whereNotIn('status', ['cancelled', 'expired'])
+                ->whereBetween('renewal_at', [$today, $today->addDays(30)])
+                ->orderBy('renewal_at')
+                ->limit(6)
+                ->get(['id', 'application_instance_id', 'status', 'renewal_at'])
+                ->map(fn (Subscription $subscription): array => [
+                    'id' => $subscription->id,
+                    'name' => $subscription->applicationInstance?->name ?? 'Unnamed instance',
+                    'status' => $subscription->status,
+                    'renewal_at' => $subscription->renewal_at?->toDateString(),
+                ])->values()->all();
         }
 
         $actionItems = collect();
@@ -128,6 +170,10 @@ class DashboardController extends Controller
             'pipeline' => $pipeline,
             'subscriptionMix' => $subscriptionMix,
             'trend' => $trend,
+            'period' => $period,
+            'paymentSummary' => $paymentSummary,
+            'workload' => $workload,
+            'renewals' => $renewals,
             'actionItems' => $actionItems->sortBy('due_at')->take(8)->values()->all(),
             'recentActivity' => $can(Permission::ViewActivityLog)
                 ? Activity::query()->with('user:id,name,avatar_path')->latest('created_at')->limit(10)->get()
