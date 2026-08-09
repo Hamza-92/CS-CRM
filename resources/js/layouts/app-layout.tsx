@@ -1,6 +1,8 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     Bell,
+    Check,
+    CheckCheck,
     Boxes,
     CalendarClock,
     CalendarDays,
@@ -8,6 +10,7 @@ import {
     FileUp,
     ChevronDown,
     ContactRound,
+    CircleAlert,
     CreditCard,
     Globe2,
     Handshake,
@@ -20,6 +23,7 @@ import {
     PanelLeftOpen,
     ReceiptText,
     Search,
+    Sparkles,
     Moon,
     Sun,
     Tag,
@@ -37,10 +41,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/hooks/use-theme';
 import type { Ability, SharedProps } from '@/types';
 import { cn } from '@/lib/utils';
+import { relativeTime } from '@/lib/format';
 
 const STORAGE_KEY = 'crm.sidebar.collapsed';
 
 type SearchResult = { type: string; icon: string; label: string; meta: string; href: string };
+type HeaderNotification = { id: string; data: { title?: string; message?: string; tone?: string; url?: string | null }; read_at: string | null; created_at: string };
 
 interface NavItem {
     label: string;
@@ -218,6 +224,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     const [searchOpen, setSearchOpen] = useState(false);
     const [searching, setSearching] = useState(false);
     const searchRootRef = useRef<HTMLDivElement>(null);
+    const [notificationOpen, setNotificationOpen] = useState(false);
+    const [headerNotifications, setHeaderNotifications] = useState<HeaderNotification[]>([]);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
+    const notificationRootRef = useRef<HTMLDivElement>(null);
     const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
@@ -232,6 +242,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         document.addEventListener('pointerdown', handlePointerDown);
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, [searchOpen]);
+
+    useEffect(() => {
+        if (!notificationOpen) return;
+        const handlePointerDown = (event: PointerEvent) => {
+            if (!notificationRootRef.current?.contains(event.target as Node)) setNotificationOpen(false);
+        };
+        document.addEventListener('pointerdown', handlePointerDown);
+        return () => document.removeEventListener('pointerdown', handlePointerDown);
+    }, [notificationOpen]);
+
+    useEffect(() => {
+        if (!notificationOpen) return;
+        setNotificationsLoading(true);
+        fetch('/notifications/recent', { headers: { Accept: 'application/json' } })
+            .then((response) => response.ok ? response.json() : { notifications: [] })
+            .then((payload: { notifications?: HeaderNotification[] }) => setHeaderNotifications(payload.notifications ?? []))
+            .catch(() => setHeaderNotifications([]))
+            .finally(() => setNotificationsLoading(false));
+    }, [notificationOpen]);
 
     useEffect(() => {
         const term = searchTerm.trim();
@@ -258,6 +287,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }, [searchTerm]);
 
     const resultIcons: Record<string, LucideIcon> = { customer: ContactRound, lead: UserRoundSearch, deal: Handshake, product: Boxes, instance: Globe2, subscription: ReceiptText, ticket: LifeBuoy, task: ListChecks };
+    const notificationIcon = (tone?: string) => tone === 'bad' ? CircleAlert : tone === 'ok' ? Check : tone === 'brand' ? Sparkles : Bell;
+    const markNotificationRead = (notification: HeaderNotification) => {
+        if (notification.read_at) return;
+        setHeaderNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, read_at: new Date().toISOString() } : item));
+        router.patch(`/notifications/${notification.id}/read`, {}, { preserveScroll: true });
+    };
 
     function toggleCollapsed() {
         setCollapsed((value) => {
@@ -344,14 +379,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
                     <div className="flex-1" />
 
-                    <Link
-                        href="/notifications"
-                        aria-label={`Notifications${page.props.notifications?.unread ? `, ${page.props.notifications.unread} unread` : ''}`}
-                        className="relative flex size-9 shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors hover:bg-surface-3 hover:text-ink"
-                    >
-                        <Bell className="size-4" />
-                        {Boolean(page.props.notifications?.unread) && <span className="absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-bad text-[8px] font-bold text-white ring-2 ring-surface">{page.props.notifications.unread > 9 ? '9+' : page.props.notifications.unread}</span>}
-                    </Link>
+                    <div ref={notificationRootRef} className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setNotificationOpen((value) => !value)}
+                            aria-expanded={notificationOpen}
+                            aria-label={`Notifications${page.props.notifications?.unread ? `, ${page.props.notifications.unread} unread` : ''}`}
+                            className="relative flex size-9 shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors hover:bg-surface-3 hover:text-ink"
+                        >
+                            <Bell className="size-4" />
+                            {Boolean(page.props.notifications?.unread) && <span className="absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-bad text-[8px] font-bold text-white ring-2 ring-surface">{page.props.notifications.unread > 9 ? '9+' : page.props.notifications.unread}</span>}
+                        </button>
+                        {notificationOpen && <div className="absolute top-11 right-0 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-line bg-surface shadow-card">
+                            <div className="flex items-center justify-between border-b border-line bg-surface-2/40 px-3.5 py-2.5"><p className="text-xs font-semibold text-ink">Notifications</p>{Boolean(page.props.notifications?.unread) && <button type="button" className="inline-flex items-center gap-1 text-2xs font-medium text-brand hover:underline" onClick={() => { setHeaderNotifications((current) => current.map((item) => ({ ...item, read_at: item.read_at ?? new Date().toISOString() }))); router.patch('/notifications/read-all', {}, { preserveScroll: true }); }}><CheckCheck className="size-3.5" /> Mark all read</button>}</div>
+                            {notificationsLoading ? <div className="px-3.5 py-7 text-center text-xs text-ink-3">Loading notifications…</div> : headerNotifications.length === 0 ? <div className="px-3.5 py-7 text-center text-xs text-ink-3">You’re all caught up</div> : <ul className="max-h-80 overflow-y-auto divide-y divide-line/70">{headerNotifications.map((notification) => { const Icon = notificationIcon(notification.data.tone); const content = <><span className={`flex size-7 shrink-0 items-center justify-center rounded-md ${notification.read_at ? 'bg-surface-3 text-ink-3' : 'bg-brand-wash text-brand'}`}><Icon className="size-3.5" /></span><span className="min-w-0 flex-1"><span className={`block truncate text-xs ${notification.read_at ? 'font-medium text-ink-2' : 'font-semibold text-ink'}`}>{notification.data.title ?? 'Notification'}</span><span className="mt-0.5 block truncate text-2xs text-ink-3">{notification.data.message ?? 'A workflow update needs your attention.'}</span><span className="mt-1 block text-[10px] text-ink-3">{relativeTime(notification.created_at)}</span></span>{!notification.read_at && <span className="size-1.5 shrink-0 rounded-full bg-brand" />}</>; return <li key={notification.id}><Link href={notification.data.url ?? '/notifications'} onClick={() => { markNotificationRead(notification); setNotificationOpen(false); }} className="flex items-start gap-2.5 px-3.5 py-2.5 transition-colors hover:bg-surface-2">{content}</Link></li>; })}</ul>}
+                            <div className="border-t border-line px-3.5 py-2 text-center"><Link href="/notifications" onClick={() => setNotificationOpen(false)} className="text-2xs font-medium text-brand hover:underline">View all notifications</Link></div>
+                        </div>}
+                    </div>
 
                     <button
                         type="button"

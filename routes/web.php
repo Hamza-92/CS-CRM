@@ -189,6 +189,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     Route::get('login-history', LoginHistoryController::class)->name('login-history.index');
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/recent', [NotificationController::class, 'recent'])->name('notifications.recent');
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('users', [UserController::class, 'store'])->name('users.store');

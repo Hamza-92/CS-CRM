@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Inertia\Inertia;
@@ -20,6 +21,16 @@ class NotificationController extends Controller
             ->withQueryString();
 
         return Inertia::render('notifications/index', [
+            'notifications' => $notifications,
+            'unreadCount' => $request->user()->unreadNotifications()->count(),
+        ]);
+    }
+
+    public function recent(Request $request): JsonResponse
+    {
+        $notifications = $request->user()->notifications()->latest()->limit(8)->get()->map(fn (DatabaseNotification $notification) => $this->payload($notification))->values();
+
+        return response()->json([
             'notifications' => $notifications,
             'unreadCount' => $request->user()->unreadNotifications()->count(),
         ]);
