@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DataExportController;
+use App\Http\Controllers\DataImportController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LeadController;
@@ -34,6 +35,10 @@ Route::middleware('auth')->group(function () {
     Route::get('calendar', CalendarController::class)->name('calendar.index');
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('imports', [DataImportController::class, 'index'])->name('imports.index');
+    Route::post('imports/customers', [DataImportController::class, 'customers'])->name('imports.customers');
+    Route::post('imports/leads', [DataImportController::class, 'leads'])->name('imports.leads');
+    Route::post('imports/tasks', [DataImportController::class, 'tasks'])->name('imports.tasks');
     Route::get('activity', ActivityController::class)->name('activity.index');
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');

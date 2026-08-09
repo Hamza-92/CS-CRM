@@ -5,6 +5,7 @@ import {
     CalendarClock,
     CalendarDays,
     ChartNoAxesCombined,
+    FileUp,
     ChevronDown,
     ContactRound,
     CreditCard,
@@ -61,6 +62,7 @@ const groups: NavGroup[] = [
             { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
             { label: 'Calendar', href: '/calendar', icon: CalendarDays, match: (p) => p.startsWith('/calendar') },
             { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined, ability: 'customers.view', match: (p) => p.startsWith('/reports') },
+            { label: 'Import data', href: '/imports', icon: FileUp, ability: 'customers.view', match: (p) => p.startsWith('/imports') },
         ],
     },
     {
