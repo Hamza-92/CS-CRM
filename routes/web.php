@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LeadController;
@@ -30,6 +31,8 @@ Route::redirect('/', '/dashboard')->name('home');
 Route::middleware('auth')->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('calendar', CalendarController::class)->name('calendar.index');
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('activity', ActivityController::class)->name('activity.index');
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');

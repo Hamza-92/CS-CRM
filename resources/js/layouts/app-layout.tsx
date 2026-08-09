@@ -4,6 +4,7 @@ import {
     Boxes,
     CalendarClock,
     CalendarDays,
+    ChartNoAxesCombined,
     ChevronDown,
     ContactRound,
     CreditCard,
@@ -59,6 +60,7 @@ const groups: NavGroup[] = [
         items: [
             { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
             { label: 'Calendar', href: '/calendar', icon: CalendarDays, match: (p) => p.startsWith('/calendar') },
+            { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined, ability: 'customers.view', match: (p) => p.startsWith('/reports') },
         ],
     },
     {
