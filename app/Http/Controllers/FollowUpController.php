@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\ApplicationInstance;
 use App\Models\User;
 use App\Support\Audit\ActivityLogger;
+use App\Services\AssignmentRouter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -76,10 +77,11 @@ class FollowUpController extends Controller
         return Inertia::render('follow-ups/create', $this->formOptions($request->integer('lead_id') ?: null, $request->integer('customer_id') ?: null, $request->integer('deal_id') ?: null, $request->integer('application_instance_id') ?: null));
     }
 
-    public function store(StoreFollowUpRequest $request): RedirectResponse
+    public function store(StoreFollowUpRequest $request, AssignmentRouter $router): RedirectResponse
     {
         $data = $this->validatedLinkedData($request->validated());
         $data['status'] = $data['status'] ?? 'pending';
+        $data['owner_id'] = $router->forFollowUp($data)?->id;
         $data['created_by_id'] = $request->user()->id;
         $followUp = FollowUp::create($data);
         $followUp->load(['lead', 'customer', 'deal', 'applicationInstance']);

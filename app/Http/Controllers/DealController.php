@@ -12,6 +12,7 @@ use App\Models\Plan;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\Audit\ActivityLogger;
+use App\Services\AssignmentRouter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,9 +43,10 @@ class DealController extends Controller
         ]);
     }
 
-    public function store(StoreDealRequest $request): RedirectResponse
+    public function store(StoreDealRequest $request, AssignmentRouter $router): RedirectResponse
     {
         $data = $this->normalized($request->validated());
+        $data['owner_id'] = $router->forDeal($data)?->id;
         $deal = Deal::create($data);
 
         return redirect()->route('deals.show', $deal)->with('success', "Deal {$deal->title} created.");

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\RoleName;
 use App\Models\ApplicationInstance;
 use App\Models\Lead;
 use App\Models\Plan;
@@ -17,6 +16,7 @@ use Illuminate\Support\Str;
 
 class DemoWorkflowService
 {
+    public function __construct(private readonly AssignmentRouter $router) {}
     public function requestDemo(Lead $lead, User $requester, ActivityLogger $logger): void
     {
         $lead->loadMissing(['owner', 'customer']);
@@ -37,7 +37,7 @@ class DemoWorkflowService
                     continue;
                 }
 
-                $assignee = $this->resolveAssignee($product);
+                $assignee = $this->router->forDemoProduct($product);
                 $title = $product instanceof Product
                     ? "Setup {$product->name} Demo"
                     : "Setup Demo for {$lead->name}";
@@ -180,18 +180,6 @@ class DemoWorkflowService
         if ($lead->owner_id !== $completer->id) {
             $this->notify($completer, 'Trial started', "The trial for {$lead->name} is now running.", 'success', $task);
         }
-    }
-
-    private function resolveAssignee(?Product $product): ?User
-    {
-        if ($product?->technical_owner_id) {
-            $owner = User::query()->active()->find($product->technical_owner_id);
-            if ($owner) {
-                return $owner;
-            }
-        }
-
-        return User::query()->active()->role(RoleName::Developer->value)->orderBy('id')->first();
     }
 
     private function automationKey(Lead $lead, ?Product $product): string

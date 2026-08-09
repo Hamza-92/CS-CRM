@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\User;
 use App\Support\Audit\ActivityLogger;
+use App\Services\AssignmentRouter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,9 +37,11 @@ class CustomerController extends Controller
         return Inertia::render('customers/create', ['owners' => $this->owners()]);
     }
 
-    public function store(StoreCustomerRequest $request): RedirectResponse
+    public function store(StoreCustomerRequest $request, AssignmentRouter $router): RedirectResponse
     {
-        $customer = Customer::create($request->validated());
+        $data = $request->validated();
+        $data['owner_id'] = $router->forCustomer($data)?->id;
+        $customer = Customer::create($data);
 
         return redirect()->route('customers.show', $customer)->with('success', "Customer {$customer->name} created.");
     }

@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\SupportTicket;
 use App\Models\User;
 use App\Support\Audit\ActivityLogger;
+use App\Services\AssignmentRouter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,9 +26,9 @@ class SupportTicketController extends Controller
     public function archived(Request $request): Response { return $this->listing($request, true); }
     public function create(): Response { Gate::authorize('create', SupportTicket::class); return Inertia::render('support-tickets/create', $this->options()); }
 
-    public function store(StoreSupportTicketRequest $request): RedirectResponse
+    public function store(StoreSupportTicketRequest $request, AssignmentRouter $router): RedirectResponse
     {
-        $data = $request->validated(); $data['ticket_number'] = $this->nextNumber(); $data['created_by_id'] = $request->user()->id;
+        $data = $request->validated(); $data['assigned_to_id'] = $router->forSupportTicket($data)?->id; $data['ticket_number'] = $this->nextNumber(); $data['created_by_id'] = $request->user()->id;
         $ticket = SupportTicket::create($this->timestamps($data));
         return redirect()->route('support-tickets.show', $ticket)->with('success', "Ticket {$ticket->ticket_number} created.");
     }

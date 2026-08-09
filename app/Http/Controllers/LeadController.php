@@ -13,6 +13,7 @@ use App\Models\LeadStatusOption;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\Audit\ActivityLogger;
+use App\Services\AssignmentRouter;
 use App\Services\DemoWorkflowService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -43,9 +44,11 @@ class LeadController extends Controller
         return Inertia::render('leads/create', $this->formOptions());
     }
 
-    public function store(StoreLeadRequest $request, DemoWorkflowService $demoWorkflow, ActivityLogger $logger): RedirectResponse
+    public function store(StoreLeadRequest $request, AssignmentRouter $router, DemoWorkflowService $demoWorkflow, ActivityLogger $logger): RedirectResponse
     {
-        $lead = Lead::create($request->validated());
+        $data = $request->validated();
+        $data['owner_id'] = $router->forLead($data)?->id;
+        $lead = Lead::create($data);
 
         if ($lead->status === 'demo_required') {
             $demoWorkflow->requestDemo($lead, $request->user(), $logger);
