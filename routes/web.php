@@ -8,6 +8,7 @@ use App\Http\Controllers\DataExportController;
 use App\Http\Controllers\DataImportController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerContactController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadSourceController;
 use App\Http\Controllers\LeadStatusController;
@@ -114,6 +115,9 @@ Route::middleware('auth')->group(function () {
     Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
     Route::get('customers/export', [DataExportController::class, 'customers'])->name('customers.export');
     Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::post('customers/{customer}/contacts', [CustomerContactController::class, 'store'])->name('customers.contacts.store');
+    Route::put('customers/{customer}/contacts/{contact}', [CustomerContactController::class, 'update'])->name('customers.contacts.update');
+    Route::delete('customers/{customer}/contacts/{contact}', [CustomerContactController::class, 'destroy'])->name('customers.contacts.destroy');
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->withTrashed()->name('customers.show');
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->withTrashed()->name('customers.edit');
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->withTrashed()->name('customers.update');

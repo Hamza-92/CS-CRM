@@ -206,6 +206,12 @@ export interface Customer {
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
+    contacts?: Array<{ id: number; name: string; job_title: string | null; email: string | null; phone: string | null; whatsapp: string | null; is_primary: boolean; notes: string | null }>;
+    leads?: Array<{ id: number; name: string; business: string | null; status: string; email: string | null; updated_at: string }>;
+    deals?: Array<{ id: number; title: string; amount: string | null; currency: string; stage: { name: string; color: string } | null }>;
+    instances?: Array<{ id: number; name: string; environment: string; status: string; product: { id: number; name: string; code: string; brand_color: string | null } | null; subscriptions: Array<{ id: number; kind: string; status: string; ends_at: string | null; plan: { name: string; code: string } | null }> }>;
+    support_tickets?: Array<{ id: number; ticket_number: string; subject: string; status: string; priority: string }>;
+    tasks?: Array<{ id: number; task_number: string; title: string; status: string; priority: string; due_at: string | null }>;
 }
 
 export interface FollowUp {

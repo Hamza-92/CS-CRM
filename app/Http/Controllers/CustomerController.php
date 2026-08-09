@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
+use App\Models\CustomerContact;
 use App\Models\Lead;
 use App\Models\User;
 use App\Support\Audit\ActivityLogger;
@@ -49,7 +50,17 @@ class CustomerController extends Controller
     public function show(Request $request, Customer $customer): Response
     {
         abort_unless($request->user()->can('view', $customer), 403);
-        $customer->load(['owner:id,name,email,avatar_path', 'followUps.owner:id,name,email,avatar_path']);
+        $customer->load([
+            'owner:id,name,email,avatar_path',
+            'contacts' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('name'),
+            'leads:id,customer_id,name,business,status,email,updated_at',
+            'deals:id,customer_id,title,amount,currency,stage_id,updated_at', 'deals.stage:id,name,slug,color',
+            'instances:id,customer_id,product_id,name,environment,status', 'instances.product:id,name,code,brand_color',
+            'instances.subscriptions:id,application_instance_id,plan_id,kind,status,ends_at,renewal_at', 'instances.subscriptions.plan:id,name,code',
+            'supportTickets:id,customer_id,ticket_number,subject,status,priority,updated_at',
+            'tasks:id,customer_id,task_number,title,status,priority,due_at,updated_at',
+            'followUps.owner:id,name,email,avatar_path',
+        ]);
 
         $sourceLead = $customer->converted_from_lead_id
             ? Lead::query()->find($customer->converted_from_lead_id, ['id', 'name', 'status', 'converted_at'])
@@ -73,6 +84,7 @@ class CustomerController extends Controller
                 'create_follow_up' => $request->user()->can('create', \App\Models\FollowUp::class),
                 'create_deal' => $request->user()->can('create', \App\Models\Deal::class),
                 'archive' => $request->user()->can('delete', $customer),
+                'manage_contacts' => $request->user()->can('update', $customer),
             ],
         ]);
     }
@@ -186,6 +198,16 @@ class CustomerController extends Controller
             'created_at' => $customer->created_at?->toISOString(),
             'updated_at' => $customer->updated_at?->toISOString(),
             'deleted_at' => $customer->deleted_at?->toISOString(),
+            'contacts' => $customer->relationLoaded('contacts') ? $customer->contacts->map(fn (CustomerContact $contact) => [
+                'id' => $contact->id, 'name' => $contact->name, 'job_title' => $contact->job_title,
+                'email' => $contact->email, 'phone' => $contact->phone, 'whatsapp' => $contact->whatsapp,
+                'is_primary' => $contact->is_primary, 'notes' => $contact->notes,
+            ])->values()->all() : [],
+            'leads' => $customer->relationLoaded('leads') ? $customer->leads->map(fn (Lead $lead) => ['id' => $lead->id, 'name' => $lead->name, 'business' => $lead->business, 'status' => $lead->status, 'email' => $lead->email, 'updated_at' => $lead->updated_at?->toISOString()])->values()->all() : [],
+            'deals' => $customer->relationLoaded('deals') ? $customer->deals->map(fn ($deal) => ['id' => $deal->id, 'title' => $deal->title, 'amount' => $deal->amount, 'currency' => $deal->currency, 'stage' => $deal->stage ? ['name' => $deal->stage->name, 'color' => $deal->stage->color] : null])->values()->all() : [],
+            'instances' => $customer->relationLoaded('instances') ? $customer->instances->map(fn ($instance) => ['id' => $instance->id, 'name' => $instance->name, 'environment' => $instance->environment, 'status' => $instance->status, 'product' => $instance->product ? ['id' => $instance->product->id, 'name' => $instance->product->name, 'code' => $instance->product->code, 'brand_color' => $instance->product->brand_color] : null, 'subscriptions' => $instance->subscriptions->map(fn ($subscription) => ['id' => $subscription->id, 'kind' => $subscription->kind, 'status' => $subscription->status, 'ends_at' => $subscription->ends_at?->toISOString(), 'plan' => $subscription->plan ? ['name' => $subscription->plan->name, 'code' => $subscription->plan->code] : null])->values()->all()])->values()->all() : [],
+            'support_tickets' => $customer->relationLoaded('supportTickets') ? $customer->supportTickets->map(fn ($ticket) => ['id' => $ticket->id, 'ticket_number' => $ticket->ticket_number, 'subject' => $ticket->subject, 'status' => $ticket->status, 'priority' => $ticket->priority])->values()->all() : [],
+            'tasks' => $customer->relationLoaded('tasks') ? $customer->tasks->map(fn ($task) => ['id' => $task->id, 'task_number' => $task->task_number, 'title' => $task->title, 'status' => $task->status, 'priority' => $task->priority, 'due_at' => $task->due_at?->toISOString()])->values()->all() : [],
         ];
     }
 }

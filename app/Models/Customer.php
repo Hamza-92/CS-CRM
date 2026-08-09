@@ -43,6 +43,10 @@ class Customer extends Model
         return $this->hasMany(FollowUp::class);
     }
 
+    public function contacts(): HasMany { return $this->hasMany(CustomerContact::class); }
+    public function supportTickets(): HasMany { return $this->hasMany(SupportTicket::class); }
+    public function tasks(): HasMany { return $this->hasMany(WorkTask::class); }
+
     public function deals(): HasMany
     {
         return $this->hasMany(Deal::class);
