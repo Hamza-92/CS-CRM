@@ -38,8 +38,8 @@ class PaymentController extends Controller
     public function show(Request $request, Payment $payment): Response
     {
         Gate::authorize('view', $payment);
-        $payment->load(['subscription.applicationInstance.customer:id,name,business,email', 'subscription.applicationInstance.product:id,name,code,brand_color', 'subscription.plan:id,name,code,billing_cycle,price,currency']);
-        return Inertia::render('payments/show', ['payment' => $this->payload($payment), 'activities' => $payment->activities()->with('user:id,name,avatar_path')->limit(20)->get(), 'can' => ['update' => $request->user()->can('update', $payment), 'archive' => $request->user()->can('delete', $payment)]]);
+        $payment->load(['subscription.applicationInstance.customer:id,name,business,email', 'subscription.applicationInstance.product:id,name,code,brand_color', 'subscription.plan:id,name,code,billing_cycle,price,currency', 'verifiedBy:id,name,email,avatar_path']);
+        return Inertia::render('payments/show', ['payment' => $this->payload($payment), 'activities' => $payment->activities()->with('user:id,name,avatar_path')->limit(20)->get(), 'can' => ['update' => $request->user()->can('update', $payment), 'archive' => $request->user()->can('delete', $payment), 'verify' => $request->user()->can('update', $payment) && ! $payment->verified_at]]);
     }
 
     public function edit(Payment $payment): Response
@@ -70,6 +70,15 @@ class PaymentController extends Controller
         return back()->with('success', 'Payment marked as paid.');
     }
 
+    public function verify(Request $request, Payment $payment, ActivityLogger $logger): RedirectResponse
+    {
+        Gate::authorize('update', $payment);
+        $data = $request->validate(['verification_notes' => ['nullable', 'string', 'max:2000']]);
+        $payment->update(['verified_at' => now(), 'verified_by_id' => $request->user()->id, 'verification_notes' => $data['verification_notes'] ?? null]);
+        $logger->log('payment.verified', $payment, "Payment {$payment->invoice_number} verified", ['verified_by_id' => $request->user()->id]);
+        return back()->with('success', 'Payment verified.');
+    }
+
     public function destroy(Payment $payment): RedirectResponse
     {
         Gate::authorize('delete', $payment);
@@ -97,7 +106,12 @@ class PaymentController extends Controller
         $query->when($request->filled('subscription_id'), fn (Builder $q) => $q->where('subscription_id', $request->integer('subscription_id')));
         $payments = $query->orderByRaw("CASE WHEN status = 'pending' AND due_at < ? THEN 0 WHEN status = 'pending' THEN 1 ELSE 2 END", [today()])->orderBy($sort, $direction)->paginate($perPage)->withQueryString();
         $stats = collect(Payment::STATUSES)->mapWithKeys(fn (string $status) => [$status => Payment::query()->where('status', $status)->count()]);
-        return Inertia::render($archived ? 'payments/archived' : 'payments/index', ['payments' => $payments, 'filters' => ['search' => $request->string('search')->toString(), 'status' => $request->string('status')->toString(), 'subscription_id' => $request->integer('subscription_id') ?: null, 'sort' => $sort, 'direction' => $direction, 'per_page' => $perPage], 'stats' => $archived ? null : $stats, 'options' => ['subscriptions' => $this->subscriptions()]]);
+        $financials = [
+            'paid' => (float) Payment::query()->where('status', 'paid')->sum('amount'),
+            'outstanding' => (float) Payment::query()->whereIn('status', ['pending', 'partially_paid'])->sum('amount'),
+            'at_risk' => (float) Payment::query()->where('status', 'failed')->sum('amount'),
+        ];
+        return Inertia::render($archived ? 'payments/archived' : 'payments/index', ['payments' => $payments, 'filters' => ['search' => $request->string('search')->toString(), 'status' => $request->string('status')->toString(), 'subscription_id' => $request->integer('subscription_id') ?: null, 'sort' => $sort, 'direction' => $direction, 'per_page' => $perPage], 'stats' => $archived ? null : $stats, 'financials' => $archived ? null : $financials, 'options' => ['subscriptions' => $this->subscriptions()]]);
     }
 
     private function subscriptions(bool $includeArchived = false): Collection
@@ -116,6 +130,6 @@ class PaymentController extends Controller
 
     private function payload(Payment $payment): array
     {
-        return [...$payment->toArray(), 'status_label' => Str::headline($payment->status), 'method_label' => $payment->method ? Str::headline($payment->method) : null, 'subscription' => $payment->subscription];
+        return [...$payment->toArray(), 'status_label' => Str::headline($payment->status), 'method_label' => $payment->method ? Str::headline($payment->method) : null, 'subscription' => $payment->subscription, 'verified_by' => $payment->verifiedBy ? ['id' => $payment->verifiedBy->id, 'name' => $payment->verifiedBy->name, 'email' => $payment->verifiedBy->email, 'avatar_url' => $payment->verifiedBy->avatar_url] : null];
     }
 }

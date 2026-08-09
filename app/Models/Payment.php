@@ -14,18 +14,19 @@ class Payment extends Model
 {
     use HasFactory, LogsActivity, SoftDeletes;
 
-    public const STATUSES = ['pending', 'paid', 'failed', 'refunded', 'void'];
+    public const STATUSES = ['pending', 'partially_paid', 'paid', 'failed', 'refunded', 'void'];
     public const METHODS = ['bank_transfer', 'card', 'cash', 'online', 'other'];
 
-    protected $fillable = ['subscription_id', 'invoice_number', 'amount', 'currency', 'status', 'method', 'due_at', 'paid_at', 'reference', 'notes'];
+    protected $fillable = ['subscription_id', 'invoice_number', 'amount', 'currency', 'status', 'method', 'due_at', 'paid_at', 'verified_at', 'verified_by_id', 'verification_notes', 'reference', 'notes'];
 
     protected function casts(): array
     {
-        return ['amount' => 'decimal:2', 'due_at' => 'date', 'paid_at' => 'date'];
+        return ['amount' => 'decimal:2', 'due_at' => 'date', 'paid_at' => 'date', 'verified_at' => 'datetime'];
     }
 
     public function subscription(): BelongsTo { return $this->belongsTo(Subscription::class); }
     public function renewal(): HasOne { return $this->hasOne(SubscriptionRenewal::class); }
+    public function verifiedBy(): BelongsTo { return $this->belongsTo(User::class, 'verified_by_id'); }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {

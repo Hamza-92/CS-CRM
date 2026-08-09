@@ -380,12 +380,15 @@ export interface Payment {
     invoice_number: string;
     amount: string;
     currency: string;
-    status: 'pending' | 'paid' | 'failed' | 'refunded' | 'void';
+    status: 'pending' | 'partially_paid' | 'paid' | 'failed' | 'refunded' | 'void';
     status_label?: string;
     method: string | null;
     method_label?: string | null;
     due_at: string | null;
     paid_at: string | null;
+    verified_at: string | null;
+    verified_by: UserRef | null;
+    verification_notes: string | null;
     reference: string | null;
     notes: string | null;
     subscription: Subscription | null;

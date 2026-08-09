@@ -146,6 +146,7 @@ Route::middleware('auth')->group(function () {
     Route::get('payments/{payment}/edit', [PaymentController::class, 'edit'])->withTrashed()->name('payments.edit');
     Route::put('payments/{payment}', [PaymentController::class, 'update'])->withTrashed()->name('payments.update');
     Route::patch('payments/{payment}/mark-paid', [PaymentController::class, 'markPaid'])->withTrashed()->name('payments.mark-paid');
+    Route::patch('payments/{payment}/verify', [PaymentController::class, 'verify'])->withTrashed()->name('payments.verify');
     Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->withTrashed()->name('payments.destroy');
     Route::patch('payments/{payment}/restore', [PaymentController::class, 'restore'])->withTrashed()->name('payments.restore');
     Route::get('support-tickets', [SupportTicketController::class, 'index'])->name('support-tickets.index');

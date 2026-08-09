@@ -17,7 +17,7 @@ export function PaymentForm({ payment, subscriptions, currencies, defaultCurrenc
     });
     const selectProps = (props: { id: string; 'aria-invalid': boolean; 'aria-describedby'?: string }) => ({ id: props.id, invalid: props['aria-invalid'], describedBy: props['aria-describedby'] });
     const subscriptionOptions = subscriptions.map((item) => ({ value: String(item.id), label: item.plan?.name ? `${item.plan.name} · ${item.application_instance?.name || 'Instance'}` : `Subscription #${item.id}`, hint: item.application_instance?.customer?.business || item.application_instance?.customer?.name || item.kind }));
-    const statusOptions = ['pending', 'paid', 'failed', 'refunded', 'void'].map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }));
+    const statusOptions = ['pending', 'partially_paid', 'paid', 'failed', 'refunded', 'void'].map((value) => ({ value, label: value.replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) }));
     const methodOptions = [{ value: '', label: 'Not specified' }, ...['bank_transfer', 'card', 'cash', 'online', 'other'].map((value) => ({ value, label: value.replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) }))];
     function submit(event: FormEvent) { event.preventDefault(); transform((values) => ({ ...values, subscription_id: Number(values.subscription_id), amount: Number(values.amount) })); (method === 'post' ? post : put)(action); }
     return <form onSubmit={submit} noValidate className="space-y-4">
