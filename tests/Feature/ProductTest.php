@@ -115,7 +115,7 @@ it('writes an audit trail across the product lifecycle', function () {
         ->pluck('event')
         ->all();
 
-    expect($events)->toBe(['product.created', 'product.updated', 'product.archived']);
+    expect($events)->toBe(['product.created', 'product.updated', 'product.status_changed', 'product.archived']);
 
     $update = Activity::where('event', 'product.updated')->first();
 

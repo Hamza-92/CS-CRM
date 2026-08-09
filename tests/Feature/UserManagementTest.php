@@ -146,7 +146,8 @@ it('stops a non super admin from editing a super admin', function () {
             'email' => $target->email,
             'role' => RoleName::Admin->value,
         ])
-        ->assertForbidden();
+        ->assertRedirect()
+        ->assertSessionHas('error');
 });
 
 it('resets another user password', function () {
@@ -187,7 +188,7 @@ it('toggles a user status', function () {
 it('prevents toggling your own status', function () {
     $admin = superAdmin();
 
-    $this->actingAs($admin)->patch("/users/{$admin->id}/status")->assertForbidden();
+    $this->actingAs($admin)->patch("/users/{$admin->id}/status")->assertRedirect()->assertSessionHas('error');
 
     expect($admin->fresh()->is_active)->toBeTrue();
 });
@@ -208,7 +209,7 @@ it('soft deletes a user so the audit trail keeps its actor', function () {
 it('prevents deleting your own account', function () {
     $admin = superAdmin();
 
-    $this->actingAs($admin)->delete("/users/{$admin->id}")->assertForbidden();
+    $this->actingAs($admin)->delete("/users/{$admin->id}")->assertRedirect()->assertSessionHas('error');
 
     expect(User::whereKey($admin->id)->exists())->toBeTrue();
 });

@@ -53,7 +53,7 @@ class DashboardController extends Controller
                     ->count()
                 : null,
             'overduePayments' => $can(Permission::ViewPayments)
-                ? Payment::query()->where('status', 'pending')->whereDate('due_at', '<', $today)->count()
+                ? Payment::query()->whereIn('status', ['pending', 'partially_paid'])->whereDate('due_at', '<', $today)->count()
                 : null,
             'openTickets' => $can(Permission::ViewSupportTickets)
                 ? SupportTicket::query()->whereNotIn('status', ['resolved', 'closed'])->count()
@@ -155,7 +155,7 @@ class DashboardController extends Controller
             ]));
         }
         if ($can(Permission::ViewPayments)) {
-            $actionItems = $actionItems->merge(Payment::query()->where('status', 'pending')->whereDate('due_at', '<', $today)->with('subscription.applicationInstance')->latest('due_at')->limit(4)->get()->map(fn (Payment $payment): array => [
+            $actionItems = $actionItems->merge(Payment::query()->whereIn('status', ['pending', 'partially_paid'])->whereDate('due_at', '<', $today)->with('subscription.applicationInstance')->latest('due_at')->limit(4)->get()->map(fn (Payment $payment): array => [
                 'id' => "payment-{$payment->id}", 'type' => 'Payment', 'title' => $payment->invoice_number ?: 'Payment due', 'detail' => $payment->subscription?->applicationInstance?->name ?? 'Unlinked subscription', 'due_at' => $payment->due_at?->toDateString(), 'href' => "/payments/{$payment->id}", 'tone' => 'bad',
             ]));
         }
