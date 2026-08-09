@@ -28,12 +28,14 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\WorkTaskController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\MyWorkController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
 
 Route::middleware('auth')->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('my-work', MyWorkController::class)->name('my-work');
     Route::get('calendar', CalendarController::class)->name('calendar.index');
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');

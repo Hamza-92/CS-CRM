@@ -59,10 +59,11 @@ interface NavGroup {
 
 const groups: NavGroup[] = [
     {
-        label: 'Workspace',
-        items: [
-            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
-            { label: 'Calendar', href: '/calendar', icon: CalendarDays, match: (p) => p.startsWith('/calendar') },
+            label: 'Workspace',
+            items: [
+                { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
+            { label: 'My Work', href: '/my-work', icon: ListChecks, ability: 'tasks.view', match: (p) => p.startsWith('/my-work') },
+                { label: 'Calendar', href: '/calendar', icon: CalendarDays, match: (p) => p.startsWith('/calendar') },
             { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined, ability: 'customers.view', match: (p) => p.startsWith('/reports') },
             { label: 'Import data', href: '/imports', icon: FileUp, ability: 'customers.view', match: (p) => p.startsWith('/imports') },
         ],

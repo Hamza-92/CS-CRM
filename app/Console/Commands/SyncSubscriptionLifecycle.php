@@ -21,11 +21,17 @@ class SyncSubscriptionLifecycle extends Command
             ->with('applicationInstance.customer.owner')
             ->chunkById(100, function ($subscriptions) use (&$expired, $logger): void {
                 foreach ($subscriptions as $subscription) {
-                    $subscription->update(['status' => 'expired']);
-                    $logger->log('subscription.expired', $subscription, 'Subscription expired automatically', [
-                        'previous_status' => $subscription->getRawOriginal('status'),
+                    $previousStatus = $subscription->status;
+                    $inGrace = $subscription->grace_ends_at?->isSameOrAfter(today()) === true;
+                    $subscription->update(['status' => $inGrace ? 'past_due' : 'expired']);
+                    $logger->log($inGrace ? 'subscription.grace_started' : 'subscription.expired', $subscription, $inGrace ? 'Subscription entered grace period automatically' : 'Subscription expired automatically', [
+                        'previous_status' => $previousStatus,
                         'ends_at' => $subscription->ends_at?->toDateString(),
+                        'grace_ends_at' => $subscription->grace_ends_at?->toDateString(),
                     ]);
+                    if ($inGrace) {
+                        continue;
+                    }
                     $owner = $subscription->applicationInstance?->customer?->owner;
                     $owner?->notify(new CrmNotification(
                         'Subscription expired',
