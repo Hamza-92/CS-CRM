@@ -3,6 +3,7 @@ import {
     Bell,
     Boxes,
     CalendarClock,
+    CalendarDays,
     ChevronDown,
     ContactRound,
     CreditCard,
@@ -57,6 +58,7 @@ const groups: NavGroup[] = [
         label: 'Workspace',
         items: [
             { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
+            { label: 'Calendar', href: '/calendar', icon: CalendarDays, match: (p) => p.startsWith('/calendar') },
         ],
     },
     {
