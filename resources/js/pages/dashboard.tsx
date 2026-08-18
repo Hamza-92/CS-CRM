@@ -144,7 +144,7 @@ export default function Dashboard({ stats, pipeline, subscriptionMix, trend, per
 
             <PageHeader
                 title="Dashboard"
-                description="A focused view of your customer operations and today's priorities."
+                description=""
                 actions={
                     <>
                         {can('tasks.create') && <Link href="/tasks/create" className={buttonVariants({ variant: 'secondary', size: 'sm' })}><Plus className="size-3.5" /> New task</Link>}

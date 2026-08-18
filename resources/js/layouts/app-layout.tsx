@@ -65,13 +65,43 @@ interface NavGroup {
 
 const groups: NavGroup[] = [
     {
-            label: 'Workspace',
-            items: [
-                { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
+        label: 'Workspace',
+        items: [
+            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
             { label: 'My Work', href: '/my-work', icon: ListChecks, ability: 'tasks.view', match: (p) => p.startsWith('/my-work') },
-                { label: 'Calendar', href: '/calendar', icon: CalendarDays, match: (p) => p.startsWith('/calendar') },
-            { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined, ability: 'customers.view', match: (p) => p.startsWith('/reports') },
-            { label: 'Import data', href: '/imports', icon: FileUp, ability: 'customers.view', match: (p) => p.startsWith('/imports') },
+            { label: 'Calendar', href: '/calendar', icon: CalendarDays, match: (p) => p.startsWith('/calendar') },
+            { label: 'Tasks', href: '/tasks', icon: ListChecks, ability: 'tasks.view', match: (p) => p.startsWith('/tasks') },
+        ],
+    },
+    {
+        label: 'Customer Operations',
+        items: [
+            { label: 'Customers', href: '/customers', icon: ContactRound, ability: 'customers.view', match: (p) => p.startsWith('/customers') },
+            { label: 'Instances', href: '/instances', icon: Boxes, ability: 'instances.view', match: (p) => p.startsWith('/instances') },
+            { label: 'Follow-ups', href: '/follow-ups', icon: CalendarClock, ability: 'follow_ups.view', match: (p) => p.startsWith('/follow-ups') },
+            { label: 'Support Tickets', href: '/support-tickets', icon: LifeBuoy, ability: 'support_tickets.view', match: (p) => p.startsWith('/support-tickets') },
+        ],
+    },
+    {
+        label: 'Lead Management',
+        items: [
+            { label: 'Leads', href: '/leads', icon: UserRoundSearch, ability: 'leads.view', match: (p) => p.startsWith('/leads') },
+            { label: 'Lead Sources', href: '/lead-sources', icon: Globe2, ability: 'leads.manage', match: (p) => p.startsWith('/lead-sources') },
+            { label: 'Lead Status', href: '/lead-statuses', icon: Tag, ability: 'leads.manage', match: (p) => p.startsWith('/lead-statuses') },
+        ],
+    },
+    {
+        label: 'Sales Pipeline',
+        items: [
+            { label: 'Deals', href: '/deals', icon: Handshake, ability: 'deals.view', match: (p) => p.startsWith('/deals') },
+            { label: 'Deal Stages', href: '/deal-stages', icon: GitBranch, ability: 'deal_stages.manage', match: (p) => p.startsWith('/deal-stages') },
+        ],
+    },
+    {
+        label: 'Subscriptions & Billing',
+        items: [
+            { label: 'Subscriptions', href: '/subscriptions', icon: ReceiptText, ability: 'subscriptions.view', match: (p) => p.startsWith('/subscriptions') },
+            { label: 'Payments', href: '/payments', icon: CreditCard, ability: 'payments.view', match: (p) => p.startsWith('/payments') },
         ],
     },
     {
@@ -81,41 +111,17 @@ const groups: NavGroup[] = [
         ],
     },
     {
+        label: 'Analytics & Tools',
+        items: [
+            { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined, ability: 'customers.view', match: (p) => p.startsWith('/reports') },
+            { label: 'Import data', href: '/imports', icon: FileUp, ability: 'customers.view', match: (p) => p.startsWith('/imports') },
+        ],
+    },
+    {
         label: 'Administration',
         items: [
             { label: 'Users', href: '/users', icon: Users, ability: 'users.view', match: (p) => p.startsWith('/users') },
             { label: 'Roles & Permissions', href: '/roles', icon: KeyRound, ability: 'roles.manage', match: (p) => p.startsWith('/roles') },
-        ],
-    },
-    {
-        label: 'Customer operations',
-        items: [
-            { label: 'Customers', href: '/customers', icon: ContactRound, ability: 'customers.view', match: (p) => p.startsWith('/customers') },
-            { label: 'Instances', href: '/instances', icon: Boxes, ability: 'instances.view', match: (p) => p.startsWith('/instances') },
-            { label: 'Subscriptions', href: '/subscriptions', icon: ReceiptText, ability: 'subscriptions.view', match: (p) => p.startsWith('/subscriptions') },
-            { label: 'Payments', href: '/payments', icon: CreditCard, ability: 'payments.view', match: (p) => p.startsWith('/payments') },
-            { label: 'Support Tickets', href: '/support-tickets', icon: LifeBuoy, ability: 'support_tickets.view', match: (p) => p.startsWith('/support-tickets') },
-            { label: 'Tasks', href: '/tasks', icon: ListChecks, ability: 'tasks.view', match: (p) => p.startsWith('/tasks') },
-            { label: 'Follow-ups', href: '/follow-ups', icon: CalendarClock, ability: 'follow_ups.view', match: (p) => p.startsWith('/follow-ups') },
-        ],
-    },
-    {
-        label: 'Lead Management',
-        icon: UserRoundSearch,
-        collapsible: true,
-        items: [
-            { label: 'Leads', href: '/leads', icon: UserRoundSearch, ability: 'leads.view', match: (p) => p.startsWith('/leads') },
-            { label: 'Lead Sources', href: '/lead-sources', icon: Globe2, ability: 'leads.manage', match: (p) => p.startsWith('/lead-sources') },
-            { label: 'Lead Status', href: '/lead-statuses', icon: Tag, ability: 'leads.manage', match: (p) => p.startsWith('/lead-statuses') },
-        ],
-    },
-    {
-        label: 'Sales Pipeline',
-        icon: Handshake,
-        collapsible: true,
-        items: [
-            { label: 'Deals', href: '/deals', icon: Handshake, ability: 'deals.view', match: (p) => p.startsWith('/deals') },
-            { label: 'Deal Stages', href: '/deal-stages', icon: GitBranch, ability: 'deal_stages.manage', match: (p) => p.startsWith('/deal-stages') },
         ],
     },
 ];
@@ -135,8 +141,45 @@ function Rail({
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ 'Lead Management': path.startsWith('/leads') || path.startsWith('/lead-'), 'Sales Pipeline': path.startsWith('/deals') || path.startsWith('/deal-stages') });
 
     const visible = groups
-        .map((group) => ({ ...group, items: group.items.filter((item) => !item.ability || can(item.ability)) }))
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => !item.ability || can(item.ability)),
+        }))
         .filter((group) => group.items.length > 0);
+
+    const renderItems = (items: NavItem[]) => (
+        <div className="space-y-0.5">
+            {items.map((item) => {
+                const active = item.match(path);
+
+                return (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onNavigate}
+                        aria-current={active ? 'page' : undefined}
+                        className={cn(
+                            'group relative flex items-center rounded-md text-xs font-medium transition-colors duration-150',
+                            collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5',
+                            active
+                                ? 'bg-brand-wash font-semibold text-brand'
+                                : 'text-rail-ink-2 hover:bg-rail-2 hover:text-rail-ink',
+                        )}
+                    >
+                        {active && !collapsed && <span className="absolute inset-y-1.5 -left-2.5 w-0.5 rounded-r bg-brand" />}
+                        <item.icon className="size-4 shrink-0" />
+                        {!collapsed && item.label}
+                        {collapsed && (
+                            <span role="tooltip" className="pointer-events-none absolute top-1/2 left-full z-60 ml-3 -translate-y-1/2 origin-left scale-90 rounded-md bg-brand px-2.5 py-1.5 text-2xs font-medium whitespace-nowrap text-brand-ink opacity-0 shadow-pop transition-all duration-150 group-hover:scale-100 group-hover:opacity-100">
+                                <span aria-hidden="true" className="absolute top-1/2 -left-1 size-2 -translate-y-1/2 rotate-45 rounded-[1px] bg-brand" />
+                                {item.label}
+                            </span>
+                        )}
+                    </Link>
+                );
+            })}
+        </div>
+    );
 
     return (
         <div className="flex h-full flex-col border-r border-rail-line bg-rail">
@@ -165,44 +208,7 @@ function Rail({
                             const GroupIcon = group.icon;
                             return <>
                                 {!collapsed && (group.collapsible ? <button type="button" onClick={() => setOpenGroups((current) => ({ ...current, [group.label]: !expanded }))} className={cn('mb-1.5 flex w-full items-center gap-2 px-2.5 text-left text-xs font-semibold transition-colors', groupActive ? 'text-brand' : 'text-rail-ink-3')}>{GroupIcon && <GroupIcon className="size-4" />}<span className="flex-1">{group.label}</span><ChevronDown className={cn('size-3.5 transition-transform', expanded && 'rotate-180')} /></button> : <p className="eyebrow mb-1.5 px-2.5 text-rail-ink-3">{group.label}</p>)}
-                                {(expanded || collapsed) && <div className={cn('space-y-0.5', !collapsed && group.collapsible && 'ml-3.5 border-l border-line pl-2.5')}>{group.items.map((item) => {
-                                const active = item.match(path);
-
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={onNavigate}
-                                        aria-current={active ? 'page' : undefined}
-                                        className={cn(
-                                            'group relative flex items-center rounded-md text-xs font-medium transition-colors duration-150',
-                                            collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5',
-                                            active
-                                                ? 'bg-brand-wash font-semibold text-brand'
-                                                : 'text-rail-ink-2 hover:bg-rail-2 hover:text-rail-ink',
-                                        )}
-                                    >
-                                        {active && !collapsed && (
-                                            <span className="absolute inset-y-1.5 -left-2.5 w-0.5 rounded-r bg-brand" />
-                                        )}
-                                        <item.icon className="size-4 shrink-0" />
-                                        {!collapsed && item.label}
-
-                                        {collapsed && (
-                                            <span
-                                                role="tooltip"
-                                                className="pointer-events-none absolute top-1/2 left-full z-60 ml-3 -translate-y-1/2 origin-left scale-90 rounded-md bg-brand px-2.5 py-1.5 text-2xs font-medium whitespace-nowrap text-brand-ink opacity-0 shadow-pop transition-all duration-150 group-hover:scale-100 group-hover:opacity-100"
-                                            >
-                                                <span
-                                                    aria-hidden="true"
-                                                    className="absolute top-1/2 -left-1 size-2 -translate-y-1/2 rotate-45 rounded-[1px] bg-brand"
-                                                />
-                                                {item.label}
-                                            </span>
-                                        )}
-                                    </Link>
-                                );
-                            })}</div>}
+                                {(expanded || collapsed) && renderItems(group.items)}
                             </>;
                         })()}
                     </div>
