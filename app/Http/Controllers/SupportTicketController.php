@@ -24,7 +24,7 @@ class SupportTicketController extends Controller
     private const SORTABLE = ['ticket_number', 'subject', 'priority', 'status', 'due_at', 'created_at'];
     public function index(Request $request): Response { return $this->listing($request, false); }
     public function archived(Request $request): Response { return $this->listing($request, true); }
-    public function create(): Response { Gate::authorize('create', SupportTicket::class); return Inertia::render('support-tickets/create', $this->options()); }
+    public function create(Request $request): Response { Gate::authorize('create', SupportTicket::class); return Inertia::render('support-tickets/create', [...$this->options(), 'defaults' => ['customer_id' => $request->integer('customer_id') ?: null]]); }
 
     public function store(StoreSupportTicketRequest $request, AssignmentRouter $router): RedirectResponse
     {

@@ -9,9 +9,9 @@ import type { SupportTicket, UserRef } from '@/types';
 
 type Ref = { id: number; name: string; business?: string | null; email?: string | null };
 
-export function SupportTicketForm({ ticket, customers, instances, assignees, action, method, submitLabel }: { ticket?: SupportTicket; customers: Ref[]; instances: Ref[]; assignees: UserRef[]; action: string; method: 'post' | 'put'; submitLabel: string }) {
+export function SupportTicketForm({ ticket, defaultCustomerId, customers, instances, assignees, action, method, submitLabel }: { ticket?: SupportTicket; defaultCustomerId?: number | null; customers: Ref[]; instances: Ref[]; assignees: UserRef[]; action: string; method: 'post' | 'put'; submitLabel: string }) {
     const { data, setData, post, put, transform, processing, errors } = useForm({
-        customer_id: ticket?.customer_id ? String(ticket.customer_id) : '',
+        customer_id: ticket?.customer_id ? String(ticket.customer_id) : defaultCustomerId ? String(defaultCustomerId) : '',
         application_instance_id: ticket?.application_instance_id ? String(ticket.application_instance_id) : '',
         assigned_to_id: ticket?.assigned_to_id ? String(ticket.assigned_to_id) : '',
         subject: ticket?.subject ?? '', description: ticket?.description ?? '',

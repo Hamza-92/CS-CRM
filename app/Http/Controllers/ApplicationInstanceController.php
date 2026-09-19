@@ -25,10 +25,10 @@ class ApplicationInstanceController extends Controller
     public function index(Request $request): Response { return $this->listing($request, false); }
     public function archived(Request $request): Response { return $this->listing($request, true); }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', ApplicationInstance::class);
-        return Inertia::render('application-instances/create', $this->options());
+        return Inertia::render('application-instances/create', [...$this->options(), 'defaults' => ['customer_id' => $request->integer('customer_id') ?: null]]);
     }
 
     public function store(StoreApplicationInstanceRequest $request): RedirectResponse

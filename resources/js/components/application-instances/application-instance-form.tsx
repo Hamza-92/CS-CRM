@@ -9,9 +9,9 @@ import type { ApplicationInstance, ProductRef, UserRef } from '@/types';
 
 type Ref = { id: number; name: string; business?: string | null; email?: string | null; code?: string };
 
-export function ApplicationInstanceForm({ instance, customers, products, owners, action, method, submitLabel }: { instance?: ApplicationInstance; customers: Ref[]; products: ProductRef[]; owners: UserRef[]; action: string; method: 'post' | 'put'; submitLabel: string }) {
+export function ApplicationInstanceForm({ instance, defaultCustomerId, customers, products, owners, action, method, submitLabel }: { instance?: ApplicationInstance; defaultCustomerId?: number | null; customers: Ref[]; products: ProductRef[]; owners: UserRef[]; action: string; method: 'post' | 'put'; submitLabel: string }) {
     const { data, setData, post, put, transform, processing, errors } = useForm({
-        customer_id: instance?.customer_id ? String(instance.customer_id) : '', product_id: instance?.product_id ? String(instance.product_id) : '', owner_id: instance?.owner_id ? String(instance.owner_id) : '', name: instance?.name ?? '', environment: instance?.environment ?? 'production', status: instance?.status ?? 'planned', deployment_url: instance?.deployment_url ?? '', server_name: instance?.server_name ?? '', version: instance?.version ?? '', deployed_at: instance?.deployed_at?.slice(0, 10) ?? '', notes: instance?.notes ?? '',
+        customer_id: instance?.customer_id ? String(instance.customer_id) : defaultCustomerId ? String(defaultCustomerId) : '', product_id: instance?.product_id ? String(instance.product_id) : '', owner_id: instance?.owner_id ? String(instance.owner_id) : '', name: instance?.name ?? '', environment: instance?.environment ?? 'production', status: instance?.status ?? 'planned', deployment_url: instance?.deployment_url ?? '', server_name: instance?.server_name ?? '', version: instance?.version ?? '', deployed_at: instance?.deployed_at?.slice(0, 10) ?? '', notes: instance?.notes ?? '',
     });
     const selectProps = (props: { id: string; 'aria-invalid': boolean; 'aria-describedby'?: string }) => ({ id: props.id, invalid: props['aria-invalid'], describedBy: props['aria-describedby'] });
     const customerOptions = customers.map((customer) => ({ value: String(customer.id), label: customer.name, hint: customer.business || customer.email || undefined }));

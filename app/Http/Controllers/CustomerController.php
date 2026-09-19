@@ -2,18 +2,31 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreCustomerRequest;
+use App\Http\Requests\StoreCustomerOnboardingRequest;
 use App\Http\Requests\UpdateCustomerRequest;
+use App\Models\ApplicationInstance;
 use App\Models\Customer;
 use App\Models\CustomerContact;
+use App\Models\Deal;
+use App\Models\FollowUp;
 use App\Models\Lead;
+use App\Models\Payment;
+use App\Models\Plan;
+use App\Models\Product;
+use App\Models\Subscription;
+use App\Models\SupportTicket;
 use App\Models\User;
-use App\Support\Audit\ActivityLogger;
+use App\Models\WorkTask;
 use App\Services\AssignmentRouter;
+use App\Support\Audit\ActivityLogger;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,16 +48,133 @@ class CustomerController extends Controller
     {
         abort_unless($request->user()->can('create', Customer::class), 403);
 
-        return Inertia::render('customers/create', ['owners' => $this->owners()]);
+        return Inertia::render('customers/create', [
+            'owners' => $this->owners(),
+            'products' => $this->onboardingProducts(),
+            'currencies' => config('crm.currencies'),
+            'defaultCurrency' => config('crm.default_currency'),
+            'defaults' => [
+                'starts_at' => today()->toDateString(),
+                'invoice_number' => 'INV-'.now()->format('Ymd').'-'.Str::upper(Str::random(4)),
+            ],
+            'can' => [
+                'create_instance' => $request->user()->can('create', ApplicationInstance::class),
+                'create_subscription' => $request->user()->can('create', Subscription::class),
+                'create_payment' => $request->user()->can('create', Payment::class),
+            ],
+        ]);
     }
 
-    public function store(StoreCustomerRequest $request, AssignmentRouter $router): RedirectResponse
+    public function store(StoreCustomerOnboardingRequest $request, AssignmentRouter $router): RedirectResponse
     {
         $data = $request->validated();
-        $data['owner_id'] = $router->forCustomer($data)?->id;
-        $customer = Customer::create($data);
+        $applicationEnabled = (bool) data_get($data, 'application.enabled', false);
+        $subscriptionEnabled = (bool) data_get($data, 'subscription.enabled', false);
+        $paymentEnabled = (bool) data_get($data, 'payment.enabled', false);
 
-        return redirect()->route('customers.show', $customer)->with('success', "Customer {$customer->name} created.");
+        abort_if($applicationEnabled && ! $request->user()->can('create', ApplicationInstance::class), 403);
+        abort_if($subscriptionEnabled && ! $request->user()->can('create', Subscription::class), 403);
+        abort_if($paymentEnabled && ! $request->user()->can('create', Payment::class), 403);
+
+        if ($subscriptionEnabled && ! $applicationEnabled) {
+            throw ValidationException::withMessages(['subscription.enabled' => 'A subscription requires an application.']);
+        }
+        if ($paymentEnabled && ! $subscriptionEnabled) {
+            throw ValidationException::withMessages(['payment.enabled' => 'A payment requires a subscription.']);
+        }
+
+        $product = $applicationEnabled
+            ? Product::query()->active()->findOrFail((int) data_get($data, 'application.product_id'))
+            : null;
+        $plan = $subscriptionEnabled
+            ? Plan::query()->active()->findOrFail((int) data_get($data, 'subscription.plan_id'))
+            : null;
+
+        if ($plan && $product && $plan->product_id !== $product->id) {
+            throw ValidationException::withMessages(['subscription.plan_id' => 'Select a plan that belongs to the chosen product.']);
+        }
+
+        $customer = DB::transaction(function () use ($data, $router, $product, $plan, $applicationEnabled, $subscriptionEnabled, $paymentEnabled): Customer {
+            $customerData = Arr::except($data, ['contacts', 'application', 'subscription', 'payment']);
+            $customerData['owner_id'] = $router->forCustomer($customerData)?->id;
+            $customer = Customer::query()->create($customerData);
+
+            $contacts = collect($data['contacts'] ?? [])->filter(fn (array $contact) => filled($contact['name'] ?? null))->values();
+            $hasPrimary = $contacts->contains(fn (array $contact) => (bool) ($contact['is_primary'] ?? false));
+            foreach ($contacts as $index => $contact) {
+                $customer->contacts()->create([
+                    ...Arr::only($contact, ['name', 'job_title', 'email', 'phone', 'whatsapp', 'notes']),
+                    'is_primary' => $hasPrimary ? (bool) ($contact['is_primary'] ?? false) : $index === 0,
+                ]);
+            }
+
+            if (! $applicationEnabled || ! $product) {
+                return $customer;
+            }
+
+            $applicationData = $data['application'];
+            $domain = strtolower(trim((string) ($applicationData['domain'] ?? '')));
+            $instance = $customer->instances()->create([
+                'product_id' => $product->id,
+                'owner_id' => $customer->owner_id,
+                'name' => filled($applicationData['name'] ?? null)
+                    ? $applicationData['name']
+                    : (($customer->business ?: $customer->name).' CounterPOS'),
+                'environment' => $applicationData['environment'],
+                'status' => $applicationData['status'],
+                'deployment_url' => $domain !== '' ? 'https://'.$domain : null,
+                'server_name' => $applicationData['server_name'] ?? null,
+                'version' => $applicationData['version'] ?? null,
+                'provisioning_template_code' => $applicationData['provisioning_template_code'] ?? null,
+                'provisioning_template_version' => filled($applicationData['provisioning_template_code'] ?? null) ? 1 : null,
+                'notes' => $applicationData['notes'] ?? null,
+            ]);
+
+            if (! $subscriptionEnabled || ! $plan) {
+                return $customer;
+            }
+
+            $subscriptionData = $data['subscription'];
+            $startsAt = Carbon::parse($subscriptionData['starts_at']);
+            $duration = $plan->duration_days ?? $plan->billing_cycle->defaultDurationDays();
+            $endsAt = filled($subscriptionData['ends_at'] ?? null)
+                ? Carbon::parse($subscriptionData['ends_at'])
+                : ($duration ? $startsAt->copy()->addDays((int) $duration) : null);
+            $autoRenew = (bool) ($subscriptionData['auto_renew'] ?? true);
+            $renewalAt = filled($subscriptionData['renewal_at'] ?? null)
+                ? Carbon::parse($subscriptionData['renewal_at'])
+                : ($autoRenew ? $endsAt?->copy() : null);
+            $graceEndsAt = filled($subscriptionData['grace_ends_at'] ?? null)
+                ? Carbon::parse($subscriptionData['grace_ends_at'])
+                : ($endsAt ? $endsAt->copy()->addDays((int) $plan->grace_days) : null);
+
+            $subscription = $instance->subscriptions()->create([
+                'plan_id' => $plan->id,
+                'kind' => $subscriptionData['kind'],
+                'status' => $subscriptionData['status'],
+                'starts_at' => $startsAt->toDateString(),
+                'ends_at' => $endsAt?->toDateString(),
+                'renewal_at' => $renewalAt?->toDateString(),
+                'grace_ends_at' => $graceEndsAt?->toDateString(),
+                'auto_renew' => $autoRenew,
+                'external_reference' => $subscriptionData['external_reference'] ?? null,
+                'notes' => $subscriptionData['notes'] ?? null,
+            ]);
+
+            if ($paymentEnabled) {
+                $paymentData = $data['payment'];
+                $subscription->payments()->create([
+                    ...Arr::only($paymentData, ['invoice_number', 'amount', 'currency', 'status', 'method', 'due_at', 'paid_at', 'reference', 'notes']),
+                    'paid_at' => $paymentData['status'] === 'paid'
+                        ? ($paymentData['paid_at'] ?: today()->toDateString())
+                        : ($paymentData['paid_at'] ?? null),
+                ]);
+            }
+
+            return $customer;
+        });
+
+        return redirect()->route('customers.show', $customer)->with('success', "Customer {$customer->name} and onboarding records created.");
     }
 
     public function show(Request $request, Customer $customer): Response
@@ -55,8 +185,11 @@ class CustomerController extends Controller
             'contacts' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('name'),
             'leads:id,customer_id,name,business,status,email,updated_at',
             'deals:id,customer_id,title,amount,currency,stage_id,updated_at', 'deals.stage:id,name,slug,color',
-            'instances:id,customer_id,product_id,name,environment,status', 'instances.product:id,name,code,brand_color',
-            'instances.subscriptions:id,application_instance_id,plan_id,kind,status,ends_at,renewal_at', 'instances.subscriptions.plan:id,name,code',
+            'instances:id,customer_id,product_id,name,environment,status,deployment_url,server_name,version,last_checked_at,counterpos_tenant_id,counterpos_status,counterpos_schema_version,provisioning_template_code,last_synced_at',
+            'instances.product:id,name,code,brand_color',
+            'instances.subscriptions:id,application_instance_id,plan_id,kind,status,starts_at,ends_at,renewal_at',
+            'instances.subscriptions.plan:id,name,code',
+            'instances.subscriptions.payments:id,subscription_id,invoice_number,amount,currency,status,due_at,paid_at,verified_at',
             'supportTickets:id,customer_id,ticket_number,subject,status,priority,updated_at',
             'tasks:id,customer_id,task_number,title,status,priority,due_at,updated_at',
             'followUps.owner:id,name,email,avatar_path',
@@ -75,16 +208,21 @@ class CustomerController extends Controller
                 'reason' => $followUp->reason,
                 'scheduled_at' => $followUp->scheduled_at?->toISOString(),
                 'status' => $followUp->status,
-                'status_label' => \Illuminate\Support\Str::headline($followUp->status),
+                'status_label' => Str::headline($followUp->status),
                 'is_overdue' => $followUp->isOverdue(),
                 'owner' => $followUp->owner ? ['id' => $followUp->owner->id, 'name' => $followUp->owner->name, 'email' => $followUp->owner->email, 'avatar_url' => $followUp->owner->avatar_url] : null,
             ])->all(),
             'can' => [
                 'update' => $request->user()->can('update', $customer),
-                'create_follow_up' => $request->user()->can('create', \App\Models\FollowUp::class),
-                'create_deal' => $request->user()->can('create', \App\Models\Deal::class),
+                'create_follow_up' => $request->user()->can('create', FollowUp::class),
+                'create_deal' => $request->user()->can('create', Deal::class),
                 'archive' => $request->user()->can('delete', $customer),
                 'manage_contacts' => $request->user()->can('update', $customer),
+                'create_instance' => $request->user()->can('create', ApplicationInstance::class),
+                'create_subscription' => $request->user()->can('create', Subscription::class),
+                'create_payment' => $request->user()->can('create', Payment::class),
+                'create_ticket' => $request->user()->can('create', SupportTicket::class),
+                'create_task' => $request->user()->can('create', WorkTask::class),
             ],
         ]);
     }
@@ -169,6 +307,35 @@ class CustomerController extends Controller
         ]);
     }
 
+    private function onboardingProducts(): array
+    {
+        return Product::query()
+            ->active()
+            ->with(['plans' => fn ($query) => $query->active()->orderBy('sort_order')->orderBy('name')])
+            ->orderBy('name')
+            ->get(['id', 'name', 'code', 'brand_color', 'default_trial_days'])
+            ->map(fn (Product $product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'code' => $product->code,
+                'brand_color' => $product->brand_color,
+                'default_trial_days' => $product->default_trial_days,
+                'plans' => $product->plans->map(fn (Plan $plan) => [
+                    'id' => $plan->id,
+                    'product_id' => $plan->product_id,
+                    'name' => $plan->name,
+                    'code' => $plan->code,
+                    'billing_cycle' => $plan->billing_cycle->value,
+                    'duration_days' => $plan->duration_days,
+                    'price' => $plan->price,
+                    'currency' => $plan->currency,
+                    'grace_days' => $plan->grace_days,
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
     private function owners()
     {
         return User::query()->active()->orderBy('name')->get(['id', 'name', 'email', 'avatar_path']);
@@ -205,7 +372,46 @@ class CustomerController extends Controller
             ])->values()->all() : [],
             'leads' => $customer->relationLoaded('leads') ? $customer->leads->map(fn (Lead $lead) => ['id' => $lead->id, 'name' => $lead->name, 'business' => $lead->business, 'status' => $lead->status, 'email' => $lead->email, 'updated_at' => $lead->updated_at?->toISOString()])->values()->all() : [],
             'deals' => $customer->relationLoaded('deals') ? $customer->deals->map(fn ($deal) => ['id' => $deal->id, 'title' => $deal->title, 'amount' => $deal->amount, 'currency' => $deal->currency, 'stage' => $deal->stage ? ['name' => $deal->stage->name, 'color' => $deal->stage->color] : null])->values()->all() : [],
-            'instances' => $customer->relationLoaded('instances') ? $customer->instances->map(fn ($instance) => ['id' => $instance->id, 'name' => $instance->name, 'environment' => $instance->environment, 'status' => $instance->status, 'product' => $instance->product ? ['id' => $instance->product->id, 'name' => $instance->product->name, 'code' => $instance->product->code, 'brand_color' => $instance->product->brand_color] : null, 'subscriptions' => $instance->subscriptions->map(fn ($subscription) => ['id' => $subscription->id, 'kind' => $subscription->kind, 'status' => $subscription->status, 'ends_at' => $subscription->ends_at?->toISOString(), 'plan' => $subscription->plan ? ['name' => $subscription->plan->name, 'code' => $subscription->plan->code] : null])->values()->all()])->values()->all() : [],
+            'instances' => $customer->relationLoaded('instances') ? $customer->instances->map(fn ($instance) => [
+                'id' => $instance->id,
+                'name' => $instance->name,
+                'environment' => $instance->environment,
+                'status' => $instance->status,
+                'deployment_url' => $instance->deployment_url,
+                'server_name' => $instance->server_name,
+                'version' => $instance->version,
+                'last_checked_at' => $instance->last_checked_at?->toISOString(),
+                'counterpos_tenant_id' => $instance->counterpos_tenant_id,
+                'counterpos_status' => $instance->counterpos_status,
+                'counterpos_schema_version' => $instance->counterpos_schema_version,
+                'provisioning_template_code' => $instance->provisioning_template_code,
+                'last_synced_at' => $instance->last_synced_at?->toISOString(),
+                'product' => $instance->product ? [
+                    'id' => $instance->product->id,
+                    'name' => $instance->product->name,
+                    'code' => $instance->product->code,
+                    'brand_color' => $instance->product->brand_color,
+                ] : null,
+                'subscriptions' => $instance->subscriptions->map(fn ($subscription) => [
+                    'id' => $subscription->id,
+                    'kind' => $subscription->kind,
+                    'status' => $subscription->status,
+                    'starts_at' => $subscription->starts_at?->toISOString(),
+                    'ends_at' => $subscription->ends_at?->toISOString(),
+                    'renewal_at' => $subscription->renewal_at?->toISOString(),
+                    'plan' => $subscription->plan ? ['name' => $subscription->plan->name, 'code' => $subscription->plan->code] : null,
+                    'payments' => $subscription->payments->map(fn ($payment) => [
+                        'id' => $payment->id,
+                        'invoice_number' => $payment->invoice_number,
+                        'amount' => $payment->amount,
+                        'currency' => $payment->currency,
+                        'status' => $payment->status,
+                        'due_at' => $payment->due_at?->toISOString(),
+                        'paid_at' => $payment->paid_at?->toISOString(),
+                        'verified_at' => $payment->verified_at?->toISOString(),
+                    ])->values()->all(),
+                ])->values()->all(),
+            ])->values()->all() : [],
             'support_tickets' => $customer->relationLoaded('supportTickets') ? $customer->supportTickets->map(fn ($ticket) => ['id' => $ticket->id, 'ticket_number' => $ticket->ticket_number, 'subject' => $ticket->subject, 'status' => $ticket->status, 'priority' => $ticket->priority])->values()->all() : [],
             'tasks' => $customer->relationLoaded('tasks') ? $customer->tasks->map(fn ($task) => ['id' => $task->id, 'task_number' => $task->task_number, 'title' => $task->title, 'status' => $task->status, 'priority' => $task->priority, 'due_at' => $task->due_at?->toISOString()])->values()->all() : [],
         ];

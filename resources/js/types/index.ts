@@ -185,6 +185,45 @@ export interface Lead {
     deleted_at: string | null;
 }
 
+export interface CustomerPaymentSummary {
+    id: number;
+    invoice_number: string;
+    amount: string;
+    currency: string;
+    status: string;
+    due_at: string | null;
+    paid_at: string | null;
+    verified_at: string | null;
+}
+
+export interface CustomerSubscriptionSummary {
+    id: number;
+    kind: string;
+    status: string;
+    starts_at: string | null;
+    ends_at: string | null;
+    renewal_at: string | null;
+    plan: { name: string; code: string } | null;
+    payments: CustomerPaymentSummary[];
+}
+
+export interface CustomerInstanceSummary {
+    id: number;
+    name: string;
+    environment: string;
+    status: string;
+    deployment_url: string | null;
+    server_name: string | null;
+    version: string | null;
+    last_checked_at: string | null;
+    counterpos_tenant_id: string | null;
+    counterpos_status: string | null;
+    counterpos_schema_version: number | null;
+    provisioning_template_code: string | null;
+    last_synced_at: string | null;
+    product: { id: number; name: string; code: string; brand_color: string | null } | null;
+    subscriptions: CustomerSubscriptionSummary[];
+}
 export interface Customer {
     id: number;
     name: string;
@@ -209,7 +248,7 @@ export interface Customer {
     contacts?: Array<{ id: number; name: string; job_title: string | null; email: string | null; phone: string | null; whatsapp: string | null; is_primary: boolean; notes: string | null }>;
     leads?: Array<{ id: number; name: string; business: string | null; status: string; email: string | null; updated_at: string }>;
     deals?: Array<{ id: number; title: string; amount: string | null; currency: string; stage: { name: string; color: string } | null }>;
-    instances?: Array<{ id: number; name: string; environment: string; status: string; product: { id: number; name: string; code: string; brand_color: string | null } | null; subscriptions: Array<{ id: number; kind: string; status: string; ends_at: string | null; plan: { name: string; code: string } | null }> }>;
+    instances?: CustomerInstanceSummary[];
     support_tickets?: Array<{ id: number; ticket_number: string; subject: string; status: string; priority: string }>;
     tasks?: Array<{ id: number; task_number: string; title: string; status: string; priority: string; due_at: string | null }>;
 }
