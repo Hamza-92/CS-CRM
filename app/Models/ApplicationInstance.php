@@ -20,11 +20,19 @@ class ApplicationInstance extends Model
     protected $fillable = [
         'customer_id', 'product_id', 'owner_id', 'name', 'environment', 'status',
         'deployment_url', 'server_name', 'version', 'deployed_at', 'last_checked_at', 'notes',
+        'counterpos_tenant_id', 'counterpos_status', 'counterpos_schema_version',
+        'provisioning_template_code', 'provisioning_template_version', 'last_synced_at',
     ];
 
     protected function casts(): array
     {
-        return ['deployed_at' => 'date', 'last_checked_at' => 'datetime'];
+        return [
+            'deployed_at' => 'date',
+            'last_checked_at' => 'datetime',
+            'last_synced_at' => 'datetime',
+            'counterpos_schema_version' => 'integer',
+            'provisioning_template_version' => 'integer',
+        ];
     }
 
     public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
@@ -32,6 +40,7 @@ class ApplicationInstance extends Model
     public function owner(): BelongsTo { return $this->belongsTo(User::class, 'owner_id'); }
     public function followUps(): HasMany { return $this->hasMany(FollowUp::class); }
     public function subscriptions(): HasMany { return $this->hasMany(Subscription::class); }
+    public function tenantOperations(): HasMany { return $this->hasMany(TenantOperation::class)->latest(); }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
