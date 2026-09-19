@@ -35,6 +35,16 @@ return [
         'connect_timeout' => (int) env('COUNTERPOS_API_CONNECT_TIMEOUT', 5),
         'timeout' => (int) env('COUNTERPOS_API_TIMEOUT', 15),
     ],
+    'hostinger' => [
+        'base_url' => env('HOSTINGER_API_URL', 'https://developers.hostinger.com'),
+        'token' => env('HOSTINGER_API_TOKEN'),
+        'account_username' => env('HOSTINGER_ACCOUNT_USERNAME'),
+        'hosting_order_id' => env('HOSTINGER_HOSTING_ORDER_ID') ? (int) env('HOSTINGER_HOSTING_ORDER_ID') : null,
+        'database_host' => env('HOSTINGER_DATABASE_HOST'),
+        'database_port' => (int) env('HOSTINGER_DATABASE_PORT', 3306),
+        'connect_timeout' => (int) env('HOSTINGER_API_CONNECT_TIMEOUT', 5),
+        'timeout' => (int) env('HOSTINGER_API_TIMEOUT', 20),
+    ],
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
