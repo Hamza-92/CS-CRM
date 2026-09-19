@@ -31,3 +31,45 @@ php artisan migrate
 ```
 
 Both schema changes are additive. Existing customers and application instances retain their current values, with all new linkage fields initially null.
+## Signed API connection
+
+Configure the CRM backend with the CounterPOS control API URL and the same credentials configured on CounterPOS:
+
+```dotenv
+COUNTERPOS_API_URL=https://admin.counterpos.pk/api/control/v1
+COUNTERPOS_API_KEY=crm-production
+COUNTERPOS_API_SECRET=replace-with-the-shared-random-secret
+COUNTERPOS_API_CONNECT_TIMEOUT=5
+COUNTERPOS_API_TIMEOUT=15
+```
+
+Verify the server-to-server connection without changing tenant data:
+
+```bash
+php artisan counterpos:check
+```
+
+To check the non-sensitive status of a linked application instance:
+
+```bash
+php artisan counterpos:check --instance=123
+```
+
+The CRM signs every request with a timestamp and one-time nonce. The CounterPOS token is used only on the CRM server and must never be exposed through Inertia props, browser JavaScript, logs, or operation payloads.
+## Tenant lifecycle service
+
+`CounterPosTenantService` gives the CRM one server-side entry point for tenant registration, domain configuration, database configuration and testing, migrations, status changes, and status refresh. Each mutation creates a `tenant_operations` audit record and sends its UUID idempotency key to CounterPOS. Retrying the same remote request cannot execute it twice.
+
+Database credentials are passed directly from the CRM request to the signed CounterPOS API. The CRM operation record stores only `credentials_provided: true`; it never stores the password. CounterPOS API responses also exclude all database credentials.
+
+The implemented control flow is:
+
+1. The CRM registers or locates the CounterPOS tenant.
+2. The CRM provisions hosting resources and DNS through Hostinger.
+3. The CRM sends the resulting primary domain and database connection details to CounterPOS.
+4. CounterPOS tests the database, runs the tenant migrations, and returns a safe operation result.
+5. The CRM activates the tenant after the verified domain and database are ready.
+
+## Hostinger boundary
+
+Hostinger connects only to the CRM. Keep the Hostinger API token in the CRM server environment. CounterPOS does not call Hostinger and must never receive or store the Hostinger token. This keeps provider automation replaceable and leaves CounterPOS responsible only for tenant routing, encrypted database credentials, migrations, and tenant runtime status.

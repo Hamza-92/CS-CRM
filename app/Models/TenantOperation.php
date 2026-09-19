@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TenantOperation extends Model
 {
     public const TYPES = [
+        'register',
+        'configure_domain',
+        'configure_database',
         'provision',
         'test_connection',
         'migrate',

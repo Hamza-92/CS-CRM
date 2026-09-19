@@ -28,6 +28,13 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'counterpos' => [
+        'base_url' => env('COUNTERPOS_API_URL'),
+        'key' => env('COUNTERPOS_API_KEY'),
+        'secret' => env('COUNTERPOS_API_SECRET'),
+        'connect_timeout' => (int) env('COUNTERPOS_API_CONNECT_TIMEOUT', 5),
+        'timeout' => (int) env('COUNTERPOS_API_TIMEOUT', 15),
+    ],
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
