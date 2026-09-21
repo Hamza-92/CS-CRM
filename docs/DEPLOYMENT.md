@@ -76,11 +76,13 @@ The repository includes a root `.htaccess` that internally routes web requests i
    - `HOSTINGER_SSH_PRIVATE_KEY`: the complete contents of the private `cs-crm-deploy` key.
    - `HOSTINGER_KNOWN_HOSTS`: the verified output of:
 
-     ```bash
-     ssh-keyscan -p 65002 YOUR_HOSTINGER_SSH_HOST
+     On Windows PowerShell, use the newer OpenSSH bundled with Git for Windows:
+
+     ```powershell
+     & 'C:\Program Files\Git\usr\bin\ssh-keyscan.exe' -T 10 -p 65002 -t ed25519 109.106.254.181
      ```
 
-     Compare the fingerprint with the server fingerprint shown by hPanel or by the first trusted SSH connection before saving it.
+     Save only the line beginning with `[109.106.254.181]:65002 ssh-ed25519` as the secret value. The Windows system `ssh-keyscan` may fail because its key-exchange support is older than Hostinger's server. Compare the SHA256 fingerprint with the server fingerprint shown by hPanel or by the first trusted SSH connection before saving it.
 
 5. In **Settings → Branches**, protect `main`. Require pull requests and successful status checks if production changes should be reviewed before deployment.
 6. Push this workflow commit to `main`, or run **Actions → Test and deploy CRM → Run workflow** for the first deployment.
