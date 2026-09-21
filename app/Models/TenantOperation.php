@@ -15,6 +15,7 @@ class TenantOperation extends Model
         'test_connection',
         'migrate',
         'seed_template',
+        'configure_administrator',
         'activate',
         'pause',
         'retire',

@@ -207,6 +207,22 @@ export interface CustomerSubscriptionSummary {
     payments: CustomerPaymentSummary[];
 }
 
+export interface ProvisioningStepSummary {
+    key: string;
+    label: string;
+    status: 'waiting' | 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'cancelled';
+    message: string | null;
+    started_at: string | null;
+    finished_at: string | null;
+}
+export interface ProvisioningRunSummary {
+    id: number;
+    status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+    steps: ProvisioningStepSummary[];
+    error_message: string | null;
+    started_at: string | null;
+    finished_at: string | null;
+}
 export interface CustomerInstanceSummary {
     id: number;
     name: string;
@@ -220,9 +236,11 @@ export interface CustomerInstanceSummary {
     counterpos_status: string | null;
     counterpos_schema_version: number | null;
     provisioning_template_code: string | null;
+    provisioning_template_version: number | null;
     last_synced_at: string | null;
     product: { id: number; name: string; code: string; brand_color: string | null } | null;
     subscriptions: CustomerSubscriptionSummary[];
+    provisioning: ProvisioningRunSummary | null;
 }
 export interface Customer {
     id: number;

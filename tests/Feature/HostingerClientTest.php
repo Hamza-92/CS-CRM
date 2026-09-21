@@ -13,6 +13,7 @@ beforeEach(function () {
         'services.hostinger.hosting_order_id' => null,
         'services.hostinger.database_host' => null,
         'services.hostinger.database_port' => 3306,
+        'services.hostinger.database_remote_ip' => null,
         'services.hostinger.connect_timeout' => 2,
         'services.hostinger.timeout' => 5,
     ]);
@@ -65,6 +66,23 @@ it('sends database credentials only in the Hostinger request body', function () 
     );
 
     expect($response)->toBe(['message' => 'Request accepted.']);
+});
+
+it('allows one specific remote host to access a database', function () {
+    Http::preventStrayRequests();
+    Http::fake(function (Request $request) {
+        expect($request->method())->toBe('POST')
+            ->and($request->url())->toBe('https://developers.hostinger.test/api/hosting/v1/accounts/u123456789/databases/u123456789_customer_store/remote-connections')
+            ->and($request->data())->toBe(['ip' => '203.0.113.10']);
+
+        return Http::response(['message' => 'Request accepted.'], 201);
+    });
+
+    app(HostingerClient::class)->createRemoteDatabaseConnection(
+        'u123456789',
+        'u123456789_customer_store',
+        '203.0.113.10',
+    );
 });
 
 it('maps Hostinger errors without exposing arbitrary response fields', function () {

@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { PageHeader } from '@/components/page-header';
+import { ProvisioningPanel } from '@/components/customers/provisioning-panel';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,7 @@ type CustomerPermissions = {
     create_payment: boolean;
     create_ticket: boolean;
     create_task: boolean;
+    provision_instances: boolean;
 };
 
 const emptyContact: ContactDraft = {
@@ -315,6 +317,7 @@ export default function CustomerShow({ customer, sourceLead, activities, followU
                                     <div className="rounded-md bg-surface px-3 py-2"><div className="text-2xs uppercase tracking-wide text-ink-3">Schema</div><div className="num mt-0.5 text-xs font-medium text-ink">{instance.counterpos_schema_version ?? 'Not reported'}</div></div>
                                     <div className="rounded-md bg-surface px-3 py-2"><div className="text-2xs uppercase tracking-wide text-ink-3">Template</div><div className="mt-0.5 truncate text-xs font-medium text-ink">{instance.provisioning_template_code ? titleCase(instance.provisioning_template_code) : 'Not selected'}</div></div>
                                 </div>
+                                <ProvisioningPanel instance={instance} canManage={can.provision_instances} adminName={customer.business ?? customer.name} adminEmail={customer.email ?? ''} />
                                 <div className="mt-3 border-t border-line pt-3">
                                     <div className="mb-2 flex items-center justify-between"><span className="text-2xs font-semibold uppercase tracking-wide text-ink-3">Subscriptions</span>{instanceDuePayments.length > 0 && <Badge tone="warn" size="sm">{instanceDuePayments.length} due</Badge>}</div>
                                     {instance.subscriptions.length === 0 ? <p className="text-xs text-ink-3">No subscription attached.</p> : <div className="grid gap-2 sm:grid-cols-2">{instance.subscriptions.map((subscription) => <Link key={subscription.id} href={`/subscriptions/${subscription.id}`} className="rounded-md border border-line bg-surface px-3 py-2.5 transition-colors hover:border-brand-line hover:bg-brand-wash/40"><div className="flex items-center justify-between gap-2"><span className="truncate text-xs font-medium text-ink">{subscription.plan?.name || titleCase(subscription.kind)}</span><Badge tone={subscription.status === 'active' ? 'ok' : subscription.status === 'past_due' ? 'bad' : 'neutral'} size="sm">{titleCase(subscription.status)}</Badge></div><p className="mt-1 text-2xs text-ink-3">Renews {shortDate(subscription.renewal_at || subscription.ends_at)} · {subscription.payments.length} payments</p></Link>)}</div>}

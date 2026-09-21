@@ -37,11 +37,15 @@ Configure the CRM backend with the CounterPOS control API URL and the same crede
 
 ```dotenv
 COUNTERPOS_API_URL=https://admin.counterpos.pk/api/control/v1
+COUNTERPOS_API_HOST_HEADER=
 COUNTERPOS_API_KEY=crm-production
 COUNTERPOS_API_SECRET=replace-with-the-shared-random-secret
 COUNTERPOS_API_CONNECT_TIMEOUT=5
 COUNTERPOS_API_TIMEOUT=15
+COUNTERPOS_API_LONG_TIMEOUT=900
 ```
+
+For local development, if the control hostname cannot be resolved, point `COUNTERPOS_API_URL` to the loopback URL (including `/api/control/v1`) and set `COUNTERPOS_API_HOST_HEADER` to the configured CounterPOS control host. Leave the Host-header setting empty in production.
 
 Verify the server-to-server connection without changing tenant data:
 
@@ -67,9 +71,31 @@ The implemented control flow is:
 1. The CRM registers or locates the CounterPOS tenant.
 2. The CRM provisions hosting resources and DNS through Hostinger.
 3. The CRM sends the resulting primary domain and database connection details to CounterPOS.
-4. CounterPOS tests the database, runs the tenant migrations, and returns a safe operation result.
-5. The CRM activates the tenant after the verified domain and database are ready.
+4. CounterPOS tests the database, runs the tenant migrations, and installs the selected starter data.
+5. The CRM sends the administrator name, email, and password to CounterPOS through the signed server connection.
+6. CounterPOS creates or updates the tenant administrator and stores only the password hash in the tenant database.
+7. The CRM activates the tenant after the verified domain, database, and administrator are ready.
 
 ## Hostinger boundary
 
 Hostinger connects only to the CRM. Keep the Hostinger API token in the CRM server environment. CounterPOS does not call Hostinger and must never receive or store the Hostinger token. This keeps provider automation replaceable and leaves CounterPOS responsible only for tenant routing, encrypted database credentials, migrations, and tenant runtime status.
+
+## One-click customer setup
+
+The customer workspace can run the complete tenant setup as one queued workflow. It performs preflight checks, creates or reuses the Hostinger subdomain and database, registers the CounterPOS tenant, saves the domain and database credentials, tests the connection, runs pending migrations, installs missing base reference data, configures the tenant administrator, and activates the tenant.
+
+The setup dialog pre-fills the administrator name and email from the customer record. An operator supplies and confirms a password of at least 12 characters. The encrypted queue job carries that password only for the duration of setup; it is not written to the CRM operation request, result, or error history. CounterPOS returns only the administrator email and whether the user was newly created.
+
+After registration, the customer workspace shows an **Admin password** action. It uses the same signed endpoint to update the administrator name, email, and password, so support can reset a forgotten password without logging in to the tenant or running an Artisan command.
+
+Start a queue worker anywhere the CRM is deployed:
+
+```bash
+php artisan queue:work --tries=1 --timeout=900
+```
+
+Keep the worker under Supervisor or the hosting platform's process manager in production. The customer page polls the workflow while it is queued or running and shows the status and result of every step. A failed run can resume from its failed step, and advanced controls can restart migrations, reference-data installation, connection testing, or activation. Completed steps are skipped unless an operator explicitly restarts from an earlier step.
+
+Website and database creation are lookup-before-create operations. CounterPOS migrations use their migration table, and reference-data installation checks each table before invoking its seeder, so retries do not intentionally recreate completed resources. The database password is derived deterministically from the CRM application key and instance ID so a retry can recover it without storing it in the CRM database, operation ledger, browser, or logs. Changing `APP_KEY` before provisioning completes will make that derived password unrecoverable.
+
+The current template step installs CounterPOS base reference records and records the selected template code/version. Industry-specific product catalogs such as grocery or trader inventories require template catalog data and can be added independently without changing this workflow.

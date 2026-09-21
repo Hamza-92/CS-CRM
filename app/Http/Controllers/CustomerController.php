@@ -185,8 +185,9 @@ class CustomerController extends Controller
             'contacts' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('name'),
             'leads:id,customer_id,name,business,status,email,updated_at',
             'deals:id,customer_id,title,amount,currency,stage_id,updated_at', 'deals.stage:id,name,slug,color',
-            'instances:id,customer_id,product_id,name,environment,status,deployment_url,server_name,version,last_checked_at,counterpos_tenant_id,counterpos_status,counterpos_schema_version,provisioning_template_code,last_synced_at',
+            'instances:id,customer_id,product_id,name,environment,status,deployment_url,server_name,version,last_checked_at,counterpos_tenant_id,counterpos_status,counterpos_schema_version,provisioning_template_code,provisioning_template_version,last_synced_at',
             'instances.product:id,name,code,brand_color',
+            'instances.tenantOperations' => fn ($query) => $query->where('type', 'provision')->latest()->limit(1),
             'instances.subscriptions:id,application_instance_id,plan_id,kind,status,starts_at,ends_at,renewal_at',
             'instances.subscriptions.plan:id,name,code',
             'instances.subscriptions.payments:id,subscription_id,invoice_number,amount,currency,status,due_at,paid_at,verified_at',
@@ -223,6 +224,7 @@ class CustomerController extends Controller
                 'create_payment' => $request->user()->can('create', Payment::class),
                 'create_ticket' => $request->user()->can('create', SupportTicket::class),
                 'create_task' => $request->user()->can('create', WorkTask::class),
+                'provision_instances' => $customer->instances->contains(fn ($instance) => $request->user()->can('update', $instance)),
             ],
         ]);
     }
@@ -385,7 +387,16 @@ class CustomerController extends Controller
                 'counterpos_status' => $instance->counterpos_status,
                 'counterpos_schema_version' => $instance->counterpos_schema_version,
                 'provisioning_template_code' => $instance->provisioning_template_code,
+                'provisioning_template_version' => $instance->provisioning_template_version,
                 'last_synced_at' => $instance->last_synced_at?->toISOString(),
+                'provisioning' => ($run = $instance->tenantOperations->firstWhere('type', 'provision')) ? [
+                    'id' => $run->id,
+                    'status' => $run->status,
+                    'steps' => $run->result['steps'] ?? [],
+                    'error_message' => $run->error_message,
+                    'started_at' => $run->started_at?->toISOString(),
+                    'finished_at' => $run->finished_at?->toISOString(),
+                ] : null,
                 'product' => $instance->product ? [
                     'id' => $instance->product->id,
                     'name' => $instance->product->name,

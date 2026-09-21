@@ -12,6 +12,12 @@ final class CounterPosTenantService
 {
     public function __construct(private readonly CounterPosClient $client) {}
 
+    /** @return array<string, mixed> */
+    public function health(): array
+    {
+        return $this->client->health();
+    }
+
     public function register(ApplicationInstance $instance, array $tenant, ?User $requestedBy = null): TenantOperation
     {
         $payload = $tenant + ['crm_application_instance_id' => $instance->id];
@@ -47,6 +53,31 @@ final class CounterPosTenantService
         $this->refresh($instance);
 
         return $operation;
+    }
+
+    public function seedTemplate(ApplicationInstance $instance, ?User $requestedBy = null): TenantOperation
+    {
+        $payload = [
+            'template_code' => $instance->provisioning_template_code,
+            'template_version' => $instance->provisioning_template_version ?: 1,
+        ];
+        $operation = $this->perform($instance, 'seed_template', $payload, $requestedBy,
+            fn (string $key) => $this->client->seedTemplate($this->tenantId($instance), $payload, $key));
+        $this->refresh($instance);
+
+        return $operation;
+    }
+
+    /** @param array{name: string, email: string, password: string} $administrator */
+    public function configureAdministrator(ApplicationInstance $instance, array $administrator, ?User $requestedBy = null): TenantOperation
+    {
+        $safePayload = [
+            'name' => $administrator['name'],
+            'email' => strtolower($administrator['email']),
+        ];
+
+        return $this->perform($instance, 'configure_administrator', $safePayload, $requestedBy,
+            fn (string $key) => $this->client->configureAdministrator($this->tenantId($instance), $administrator, $key));
     }
 
     public function changeStatus(ApplicationInstance $instance, string $status, int $version, ?string $reason = null, ?User $requestedBy = null): TenantOperation

@@ -52,7 +52,19 @@ final class CounterPosClient
     /** @return array<string, mixed> */
     public function migrate(string $tenantId, string $idempotencyKey): array
     {
-        return $this->request('POST', '/tenants/'.$tenantId.'/migrations', [], $idempotencyKey);
+        return $this->request('POST', '/tenants/'.$tenantId.'/migrations', [], $idempotencyKey, (int) config('services.counterpos.long_timeout', 900));
+    }
+
+    /** @return array<string, mixed> */
+    public function seedTemplate(string $tenantId, array $payload, string $idempotencyKey): array
+    {
+        return $this->request('POST', '/tenants/'.$tenantId.'/seed-template', $payload, $idempotencyKey, (int) config('services.counterpos.long_timeout', 900));
+    }
+
+    /** @return array<string, mixed> */
+    public function configureAdministrator(string $tenantId, array $payload, string $idempotencyKey): array
+    {
+        return $this->request('PUT', '/tenants/'.$tenantId.'/administrator', $payload, $idempotencyKey);
     }
 
     /** @return array<string, mixed> */
@@ -68,7 +80,7 @@ final class CounterPosClient
     }
 
     /** @return array<string, mixed> */
-    private function request(string $method, string $path, array $payload = [], ?string $idempotencyKey = null): array
+    private function request(string $method, string $path, array $payload = [], ?string $idempotencyKey = null, ?int $timeout = null): array
     {
         $baseUrl = rtrim((string) config('services.counterpos.base_url'), '/');
         $key = (string) config('services.counterpos.key');
@@ -102,8 +114,12 @@ final class CounterPosClient
         if ($idempotencyKey !== null) {
             $headers['Idempotency-Key'] = $idempotencyKey;
         }
+        $hostHeader = trim((string) config('services.counterpos.host_header', ''));
+        if ($hostHeader !== '') {
+            $headers['Host'] = $hostHeader;
+        }
 
-        $request = $this->http()->withHeaders($headers);
+        $request = $this->http($timeout)->withHeaders($headers);
         $response = $body === ''
             ? $request->send($method, $url)
             : $request->withBody($body, 'application/json')->send($method, $url);
@@ -123,10 +139,10 @@ final class CounterPosClient
         return $data;
     }
 
-    private function http(): PendingRequest
+    private function http(?int $timeout = null): PendingRequest
     {
         return Http::acceptJson()
             ->connectTimeout((int) config('services.counterpos.connect_timeout', 5))
-            ->timeout((int) config('services.counterpos.timeout', 15));
+            ->timeout($timeout ?? (int) config('services.counterpos.timeout', 15));
     }
 }

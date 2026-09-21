@@ -34,6 +34,28 @@ final class HostingerClient
     }
 
     /** @return array<string, mixed> */
+    public function deleteWebsite(string $domain): array
+    {
+        return $this->request('DELETE', '/api/hosting/v1/websites/'.rawurlencode($domain));
+    }
+
+    /** @return array<string, mixed> */
+    public function subdomains(string $accountUsername, string $parentDomain): array
+    {
+        return $this->request('GET', '/api/hosting/v1/accounts/'.rawurlencode($accountUsername).'/websites/'.rawurlencode($parentDomain).'/subdomains');
+    }
+
+    /** @return array<string, mixed> */
+    public function createSubdomain(string $accountUsername, string $parentDomain, string $subdomain, string $directory): array
+    {
+        return $this->request('POST', '/api/hosting/v1/accounts/'.rawurlencode($accountUsername).'/websites/'.rawurlencode($parentDomain).'/subdomains', [
+            'subdomain' => $subdomain,
+            'directory' => $directory,
+            'is_using_public_directory' => false,
+        ]);
+    }
+
+    /** @return array<string, mixed> */
     public function databases(string $accountUsername, int $page = 1, int $perPage = 25, array $filters = []): array
     {
         return $this->request('GET', '/api/hosting/v1/accounts/'.rawurlencode($accountUsername).'/databases', array_filter([
@@ -53,6 +75,22 @@ final class HostingerClient
             'user' => $user,
             'password' => $password,
             'website_domain' => $websiteDomain,
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    public function remoteDatabaseConnections(string $accountUsername, ?string $domain = null): array
+    {
+        return $this->request('GET', '/api/hosting/v1/accounts/'.rawurlencode($accountUsername).'/databases/remote-connections', array_filter([
+            'domain' => $domain,
+        ], static fn (mixed $value): bool => $value !== null && $value !== ''));
+    }
+
+    /** @return array<string, mixed> */
+    public function createRemoteDatabaseConnection(string $accountUsername, string $databaseName, string $ip): array
+    {
+        return $this->request('POST', '/api/hosting/v1/accounts/'.rawurlencode($accountUsername).'/databases/'.rawurlencode($databaseName).'/remote-connections', [
+            'ip' => $ip,
         ]);
     }
 
