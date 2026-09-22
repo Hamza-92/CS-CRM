@@ -267,3 +267,53 @@ it('runs every setup step in order without persisting the database password', fu
         && $request->data()['name'] === 'cp_prod_'.$instance->id
         && $request->data()['user'] === 'cp_prod_'.$instance->id);
 });
+
+it('repairs a missing verified primary domain before activating the same tenant', function () {
+    $instance = provisioningInstance();
+    $tenantId = (string) Str::uuid();
+    $instance->forceFill(['counterpos_tenant_id' => $tenantId])->save();
+
+    $domainSaved = false;
+    $activated = false;
+    Http::preventStrayRequests();
+    Http::fake(function (Request $request) use ($instance, $tenantId, &$domainSaved, &$activated) {
+        $url = $request->url();
+        if (str_ends_with($url, '/domain') && $request->method() === 'PUT') {
+            expect($request->data())->toMatchArray([
+                'host' => 'provisioning.counterpos.pk',
+                'verified' => true,
+            ]);
+            $domainSaved = true;
+        }
+        if (str_ends_with($url, '/status') && $request->method() === 'PUT') {
+            expect($domainSaved)->toBeTrue();
+            $activated = true;
+        }
+
+        return Http::response(['data' => [
+            'id' => $tenantId,
+            'crm_application_instance_id' => $instance->id,
+            'status' => $activated ? 'active' : 'provisioning',
+            'version' => 1,
+            'database' => ['configured' => true],
+            'domain' => $domainSaved
+                ? ['host' => 'provisioning.counterpos.pk', 'verified' => true]
+                : null,
+        ]]);
+    });
+
+    $run = $instance->tenantOperations()->create([
+        'requested_by_id' => superAdmin()->id,
+        'type' => 'provision',
+        'status' => 'queued',
+        'idempotency_key' => (string) Str::uuid(),
+        'result' => TenantProvisioningWorkflow::initialResult(),
+    ]);
+
+    app(TenantProvisioningWorkflow::class)->run($run, 'activate');
+
+    expect($run->fresh()->error_message)->toBeNull()
+        ->and($run->fresh()->status)->toBe('succeeded')
+        ->and($domainSaved)->toBeTrue()
+        ->and($activated)->toBeTrue();
+});

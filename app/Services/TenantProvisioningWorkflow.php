@@ -269,9 +269,15 @@ final class TenantProvisioningWorkflow
 
     private function configureDomain(ApplicationInstance $instance, string $domain): string
     {
-        $this->counterPos->configureDomain($instance, $domain, true, $this->requestedBy($instance));
+        $operation = $this->counterPos->configureDomain($instance, $domain, true, $this->requestedBy($instance));
+        $saved = is_array($operation->result['domain'] ?? null) ? $operation->result['domain'] : [];
 
-        return 'Primary tenant domain configured.';
+        // The API exposes only the primary domain, so this also confirms its primary flag.
+        if (strtolower((string) ($saved['host'] ?? '')) !== $domain || ($saved['verified'] ?? false) !== true) {
+            throw new RuntimeException('CounterPOS did not save the domain as verified and primary.');
+        }
+
+        return 'Primary tenant domain configured and verified.';
     }
 
     private function configureDatabase(ApplicationInstance $instance, string $host, string $name, string $user): string
@@ -322,10 +328,27 @@ final class TenantProvisioningWorkflow
 
     private function activate(ApplicationInstance $instance): string
     {
+        $expectedDomain = $this->domain($instance);
         $response = $this->counterPos->refresh($instance);
         $tenant = $response['data'] ?? [];
         if (($tenant['status'] ?? null) === 'active') {
             return 'Tenant is already active.';
+        }
+
+        $database = is_array($tenant['database'] ?? null) ? $tenant['database'] : [];
+        if (($database['configured'] ?? false) !== true) {
+            throw new RuntimeException('CounterPOS has no database configuration for this tenant. Re-run database setup.');
+        }
+
+        $domain = is_array($tenant['domain'] ?? null) ? $tenant['domain'] : [];
+        if (strtolower((string) ($domain['host'] ?? '')) !== $expectedDomain || ($domain['verified'] ?? false) !== true) {
+            $this->configureDomain($instance, $expectedDomain);
+            $response = $this->counterPos->refresh($instance);
+            $tenant = $response['data'] ?? [];
+            $domain = is_array($tenant['domain'] ?? null) ? $tenant['domain'] : [];
+        }
+        if (strtolower((string) ($domain['host'] ?? '')) !== $expectedDomain || ($domain['verified'] ?? false) !== true) {
+            throw new RuntimeException('CounterPOS has no verified primary domain for this tenant. Re-run domain setup.');
         }
 
         $this->counterPos->changeStatus($instance, 'active', (int) ($tenant['version'] ?? 1), null, $this->requestedBy($instance));
