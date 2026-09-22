@@ -107,6 +107,7 @@ export function ProvisioningPanel({
                 {canManage && !active && <details className="mt-3 rounded-md border border-line bg-surface-2">
                     <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 text-2xs font-semibold text-ink-2"><Settings2 className="size-3.5" /> Advanced controls</summary>
                     <div className="flex flex-wrap gap-2 border-t border-line p-3">
+                        <Button type="button" variant="secondary" size="xs" onClick={() => retry('create_database')}>Re-run database setup</Button>
                         <Button type="button" variant="secondary" size="xs" onClick={() => retry('migrate')}>Run migrations</Button>
                         <Button type="button" variant="secondary" size="xs" onClick={() => retry('seed_template')}>Install starter data</Button>
                         <Button type="button" variant="secondary" size="xs" onClick={() => openAdmin('reset')}>Set administrator</Button>
