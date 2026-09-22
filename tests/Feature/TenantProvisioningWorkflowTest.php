@@ -110,6 +110,34 @@ it('marks a failed setup as queued before resuming from its failed step', functi
         && $job->fromStep === 'create_database');
 });
 
+it('carries administrator details when retrying from database creation', function () {
+    Queue::fake();
+    $instance = provisioningInstance();
+    $run = $instance->tenantOperations()->create([
+        'requested_by_id' => superAdmin()->id,
+        'type' => 'provision',
+        'status' => 'failed',
+        'idempotency_key' => (string) Str::uuid(),
+        'result' => TenantProvisioningWorkflow::initialResult(),
+        'error_code' => 'database_connection_failed',
+        'error_message' => 'Database connection failed.',
+        'finished_at' => now(),
+    ]);
+
+    $this->actingAs(superAdmin())
+        ->post("/instances/{$instance->id}/provisioning/retry", [
+            'step' => 'create_database',
+            ...provisioningAdministrator(),
+        ])
+        ->assertRedirect();
+
+    expect($run->fresh()->status)->toBe('queued');
+    Queue::assertPushed(ProvisionTenant::class, fn (ProvisionTenant $job) => $job->operationId === $run->id
+        && $job->fromStep === 'create_database'
+        && $job->administrator['email'] === 'owner@example.test'
+        && $job->administrator['password'] === 'SecureTenantPassword123!');
+});
+
 it('updates a tenant administrator without persisting the password', function () {
     $instance = provisioningInstance();
     $instance->forceFill(['counterpos_tenant_id' => (string) Str::uuid()])->save();

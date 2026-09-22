@@ -65,7 +65,9 @@ class TenantProvisioningController extends Controller
     {
         Gate::authorize('update', $applicationInstance);
         $data = $request->validate(['step' => ['required', Rule::in(array_keys(TenantProvisioningWorkflow::STEPS))]]);
-        $administrator = $data['step'] === 'configure_administrator' ? $this->administratorData($request) : null;
+        $administrator = in_array($data['step'], ['create_database', 'configure_administrator'], true)
+            ? $this->administratorData($request)
+            : null;
         $operation = $applicationInstance->tenantOperations()->where('type', 'provision')->latest()->firstOrFail();
         abort_if(in_array($operation->status, ['queued', 'running'], true), 409, 'Customer setup is already running.');
 

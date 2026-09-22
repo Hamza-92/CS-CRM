@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import type { CustomerInstanceSummary } from '@/types';
 
 const tones = { queued: 'neutral', running: 'info', succeeded: 'ok', failed: 'bad', cancelled: 'neutral' } as const;
-type AdminMode = 'start' | 'resume' | 'reset' | null;
+type AdminMode = 'start' | 'resume' | 'database' | 'reset' | null;
 
 export function ProvisioningPanel({
     instance,
@@ -32,6 +32,7 @@ export function ProvisioningPanel({
         admin_email: adminEmail,
         password: '',
         password_confirmation: '',
+        step: '',
     });
 
     useEffect(() => {
@@ -47,6 +48,7 @@ export function ProvisioningPanel({
             admin_email: adminEmail,
             password: '',
             password_confirmation: '',
+            step: mode === 'database' ? 'create_database' : '',
         });
         setAdminMode(mode);
     };
@@ -61,11 +63,17 @@ export function ProvisioningPanel({
             post(`/instances/${instance.id}/provisioning`, options);
         } else if (adminMode === 'resume') {
             post(`/instances/${instance.id}/provisioning/resume`, options);
+        } else if (adminMode === 'database') {
+            post(`/instances/${instance.id}/provisioning/retry`, options);
         } else if (adminMode === 'reset') {
             put(`/instances/${instance.id}/administrator`, options);
         }
     };
     const retry = (step: string) => {
+        if (step === 'create_database') {
+            openAdmin('database');
+            return;
+        }
         if (step === 'configure_administrator') {
             openAdmin('resume');
             return;
@@ -121,13 +129,13 @@ export function ProvisioningPanel({
         <Modal
             open={adminMode !== null}
             onClose={closeAdmin}
-            title={adminMode === 'reset' ? 'Tenant administrator password' : 'Tenant administrator'}
+            title={adminMode === 'reset' ? 'Tenant administrator password' : adminMode === 'database' ? 'Re-run database setup' : 'Tenant administrator'}
             width="sm"
             footer={<>
                 <Button type="button" variant="secondary" onClick={closeAdmin} disabled={processing}>Cancel</Button>
                 <Button type="submit" form="tenant-administrator-form" disabled={processing}>
                     {processing && <LoaderCircle className="animate-spin" />}
-                    {adminMode === 'reset' ? 'Update password' : adminMode === 'resume' ? 'Resume setup' : 'Start setup'}
+                    {adminMode === 'reset' ? 'Update password' : adminMode === 'resume' ? 'Resume setup' : adminMode === 'database' ? 'Re-run database setup' : 'Start setup'}
                 </Button>
             </>}
         >
