@@ -136,14 +136,18 @@ final class TenantProvisioningWorkflow
         $subdomainDirectory = trim((string) config('services.hostinger.subdomain_directory'), '/');
         $databaseHost = (string) config('services.hostinger.database_host');
         $databaseRemoteIp = (string) config('services.hostinger.database_remote_ip');
-        $shortName = 'cp'.$instance->id;
+        $databasePrefix = strtolower(trim((string) config('services.hostinger.database_prefix', 'cp')));
+        if (! preg_match('/^[a-z][a-z0-9_]{1,15}$/', $databasePrefix)) {
+            throw new RuntimeException('HOSTINGER_DATABASE_PREFIX must be 2-16 lowercase letters, numbers, or underscores and start with a letter.');
+        }
+        $shortName = $databasePrefix.$instance->id;
         $databaseName = $this->fullDatabaseName($account, $shortName);
         $databaseUser = $this->fullDatabaseName($account, $shortName);
 
         return match ($step) {
             'preflight' => $this->preflight($instance, $domain, $account, $parentDomain, $subdomainDirectory, $databaseHost, $databaseRemoteIp),
             'create_website' => $this->ensureSubdomain($account, $parentDomain, $domain, $subdomainDirectory),
-            'create_database' => $this->ensureDatabase($account, $shortName, $domain),
+            'create_database' => $this->ensureDatabase($account, $shortName, $domain, $instance->id),
             'allow_database_access' => $this->ensureRemoteDatabaseAccess($account, $databaseName, $domain, $databaseRemoteIp),
             'register_tenant' => $this->registerTenant($instance),
             'configure_domain' => $this->configureDomain($instance, $domain),
@@ -210,7 +214,7 @@ final class TenantProvisioningWorkflow
         return 'Hostinger subdomain points to the CounterPOS public directory.';
     }
 
-    private function ensureDatabase(string $account, string $shortName, string $domain): string
+    private function ensureDatabase(string $account, string $shortName, string $domain, int $instanceId): string
     {
         $fullName = $this->fullDatabaseName($account, $shortName);
         $databases = $this->hostinger->databases($account, 1, 25, ['search' => $shortName]);
@@ -218,7 +222,7 @@ final class TenantProvisioningWorkflow
             return 'Database already exists; reused safely.';
         }
 
-        $this->hostinger->createDatabase($account, $shortName, $shortName, $this->databasePassword((int) str_replace('cp', '', $shortName)), $domain);
+        $this->hostinger->createDatabase($account, $shortName, $shortName, $this->databasePassword($instanceId), $domain);
 
         return 'Database and database user created.';
     }

@@ -44,6 +44,7 @@ return [
         'hosting_order_id' => env('HOSTINGER_HOSTING_ORDER_ID') ? (int) env('HOSTINGER_HOSTING_ORDER_ID') : null,
         'parent_domain' => env('HOSTINGER_PARENT_DOMAIN'),
         'subdomain_directory' => env('HOSTINGER_SUBDOMAIN_DIRECTORY', 'public'),
+        'database_prefix' => env('HOSTINGER_DATABASE_PREFIX', 'cp'),
         'database_host' => env('HOSTINGER_DATABASE_HOST'),
         'database_port' => (int) env('HOSTINGER_DATABASE_PORT', 3306),
         'database_remote_ip' => env('HOSTINGER_DATABASE_REMOTE_IP'),

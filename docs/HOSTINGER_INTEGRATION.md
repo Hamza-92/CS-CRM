@@ -13,12 +13,15 @@ HOSTINGER_ACCOUNT_USERNAME=u123456789
 HOSTINGER_HOSTING_ORDER_ID=123456789
 HOSTINGER_PARENT_DOMAIN=counterpos.pk
 HOSTINGER_SUBDOMAIN_DIRECTORY=public
+HOSTINGER_DATABASE_PREFIX=prod_cp
 HOSTINGER_DATABASE_HOST=your-hostinger-database-host
 HOSTINGER_DATABASE_PORT=3306
 HOSTINGER_DATABASE_REMOTE_IP=your-counterpos-server-public-ip
 HOSTINGER_API_CONNECT_TIMEOUT=5
 HOSTINGER_API_TIMEOUT=20
 ```
+
+Use a different stable `HOSTINGER_DATABASE_PREFIX` for each CRM environment that provisions databases in the same Hostinger account, for example `prod_cp` in production and `dev_cp` locally. Keep the production prefix and `APP_KEY` unchanged after provisioning starts. This prevents a fresh local or staging CRM database from claiming an existing production database name.
 
 Do not commit the token. It inherits the permissions of the Hostinger account that created it.
 
