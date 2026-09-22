@@ -50,7 +50,7 @@ beforeEach(function () {
         'services.hostinger.hosting_order_id' => 987,
         'services.hostinger.parent_domain' => 'counterpos.pk',
         'services.hostinger.subdomain_directory' => 'public',
-        'services.hostinger.database_prefix' => 'prod_cp',
+        'services.hostinger.database_prefix' => 'cp_prod_',
         'services.hostinger.database_host' => 'mysql.hostinger.test',
         'services.hostinger.database_port' => 3306,
         'services.hostinger.database_remote_ip' => '203.0.113.10',
@@ -264,6 +264,6 @@ it('runs every setup step in order without persisting the database password', fu
 
     Http::assertSent(fn (Request $request) => $request->method() === 'POST'
         && str_ends_with($request->url(), '/databases')
-        && $request->data()['name'] === 'prod_cp'.$instance->id
-        && $request->data()['user'] === 'prod_cp'.$instance->id);
+        && $request->data()['name'] === 'cp_prod_'.$instance->id
+        && $request->data()['user'] === 'cp_prod_'.$instance->id);
 });
