@@ -23,6 +23,8 @@ export function Modal({
 }) {
     const panelRef = useRef<HTMLDivElement>(null);
     const restoreRef = useRef<HTMLElement | null>(null);
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
     const titleId = useId();
 
     const widths = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl' };
@@ -73,7 +75,7 @@ export function Modal({
         function onKeyDown(event: KeyboardEvent) {
             if (event.key === 'Escape') {
                 event.stopPropagation();
-                onClose();
+                onCloseRef.current();
 
                 return;
             }
@@ -89,7 +91,7 @@ export function Modal({
             document.body.style.overflow = overflow;
             restoreRef.current?.focus?.();
         };
-    }, [open, onClose, trapFocus]);
+    }, [open, trapFocus]);
 
     if (!open || typeof document === 'undefined') {
         return null;
