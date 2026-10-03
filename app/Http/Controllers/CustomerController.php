@@ -18,6 +18,7 @@ use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\WorkTask;
 use App\Services\AssignmentRouter;
+use App\Services\CounterPos\TenantAccessLifecycleService;
 use App\Support\Audit\ActivityLogger;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,6 +30,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class CustomerController extends Controller
 {
@@ -236,35 +238,45 @@ class CustomerController extends Controller
         return Inertia::render('customers/edit', ['customer' => $this->payload($customer), 'owners' => $this->owners()]);
     }
 
-    public function update(UpdateCustomerRequest $request, Customer $customer, ActivityLogger $logger): RedirectResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer, ActivityLogger $logger, TenantAccessLifecycleService $access): RedirectResponse
     {
         $oldStatus = $customer->status;
         $customer->update($request->validated());
 
+        $synced = true;
         if ($oldStatus !== $customer->status) {
             $logger->log('customer.status_changed', $customer, "Customer {$customer->name} status changed", [
                 'old' => ['status' => $oldStatus],
                 'new' => ['status' => $customer->status],
             ]);
+            $synced = $this->syncCustomerInstances($customer, $access, $request->user());
         }
 
-        return redirect()->route('customers.show', $customer)->with('success', "Customer {$customer->name} updated.");
+        $response = redirect()->route('customers.show', $customer)->with('success', "Customer {$customer->name} updated.");
+
+        return $synced ? $response : $response->with('error', 'Customer updated, but one or more CounterPOS tenants could not be synchronized. The scheduled lifecycle sync will retry.');
     }
 
-    public function destroy(Request $request, Customer $customer): RedirectResponse
+    public function destroy(Request $request, Customer $customer, TenantAccessLifecycleService $access): RedirectResponse
     {
         abort_unless($request->user()->can('delete', $customer), 403);
         $customer->delete();
+        $synced = $this->syncCustomerInstances($customer, $access, $request->user());
 
-        return redirect()->route('customers.index')->with('success', "Customer {$customer->name} archived.");
+        $response = redirect()->route('customers.index')->with('success', "Customer {$customer->name} archived.");
+
+        return $synced ? $response : $response->with('error', 'Customer archived, but one or more CounterPOS tenants could not be archived. The scheduled lifecycle sync will retry.');
     }
 
-    public function restore(Request $request, Customer $customer): RedirectResponse
+    public function restore(Request $request, Customer $customer, TenantAccessLifecycleService $access): RedirectResponse
     {
         abort_unless($request->user()->can('restore', $customer), 403);
         $customer->restore();
+        $synced = $this->syncCustomerInstances($customer, $access, $request->user());
 
-        return redirect()->route('customers.archived')->with('success', "Customer {$customer->name} restored.");
+        $response = redirect()->route('customers.archived')->with('success', "Customer {$customer->name} restored.");
+
+        return $synced ? $response : $response->with('error', 'Customer restored, but one or more CounterPOS tenants could not be synchronized. The scheduled lifecycle sync will retry.');
     }
 
     private function listing(Request $request, bool $archived): Response
@@ -307,6 +319,22 @@ class CustomerController extends Controller
                 'archive' => $request->user()->can('delete', Customer::class),
             ],
         ]);
+    }
+
+    private function syncCustomerInstances(Customer $customer, TenantAccessLifecycleService $access, ?User $requestedBy): bool
+    {
+        $succeeded = true;
+
+        foreach ($customer->instances()->withTrashed()->get() as $instance) {
+            try {
+                $access->sync($instance, $requestedBy);
+            } catch (Throwable $exception) {
+                report($exception);
+                $succeeded = false;
+            }
+        }
+
+        return $succeeded;
     }
 
     private function onboardingProducts(): array

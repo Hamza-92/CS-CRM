@@ -8,42 +8,56 @@ use App\Models\ApplicationInstance;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SubscriptionRenewal;
+use App\Services\CounterPos\TenantAccessLifecycleService;
 use App\Support\Audit\ActivityLogger;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class SubscriptionController extends Controller
 {
     private const SORTABLE = ['starts_at', 'ends_at', 'renewal_at', 'status', 'created_at'];
 
-    public function index(Request $request): Response { return $this->listing($request, false); }
-    public function archived(Request $request): Response { return $this->listing($request, true); }
+    public function index(Request $request): Response
+    {
+        return $this->listing($request, false);
+    }
+
+    public function archived(Request $request): Response
+    {
+        return $this->listing($request, true);
+    }
 
     public function create(): Response
     {
         Gate::authorize('create', Subscription::class);
+
         return Inertia::render('subscriptions/create', $this->options());
     }
 
-    public function store(StoreSubscriptionRequest $request): RedirectResponse
+    public function store(StoreSubscriptionRequest $request, TenantAccessLifecycleService $access): RedirectResponse
     {
         $data = $this->withDates($request->validated());
         $subscription = Subscription::create($data);
-        return redirect()->route('subscriptions.show', $subscription)->with('success', 'Subscription created.');
+        $synced = $this->syncAccess($access, $subscription, $request->user());
+        $response = redirect()->route('subscriptions.show', $subscription)->with('success', 'Subscription created.');
+
+        return $synced ? $response : $response->with('error', 'Subscription created, but CounterPOS access could not be synchronized. The scheduled lifecycle sync will retry.');
     }
 
     public function show(Request $request, Subscription $subscription): Response
     {
         Gate::authorize('view', $subscription);
         $subscription->load(['applicationInstance.customer:id,name,business,email', 'applicationInstance.product:id,name,code,brand_color', 'plan.product:id,name,code', 'applicationInstance.owner:id,name,email,avatar_path', 'renewals.plan:id,name,code', 'renewals.payment:id,invoice_number,amount,currency,status', 'renewals.createdBy:id,name']);
+
         return Inertia::render('subscriptions/show', [
             'subscription' => $this->payload($subscription),
             'activities' => $subscription->activities()->with('user:id,name,avatar_path')->limit(20)->get(),
@@ -72,15 +86,20 @@ class SubscriptionController extends Controller
     public function edit(Subscription $subscription): Response
     {
         Gate::authorize('update', $subscription);
+
         return Inertia::render('subscriptions/edit', [...$this->options(), 'subscription' => $this->payload($subscription)]);
     }
 
-    public function update(UpdateSubscriptionRequest $request, Subscription $subscription, ActivityLogger $logger): RedirectResponse
+    public function update(UpdateSubscriptionRequest $request, Subscription $subscription, ActivityLogger $logger, TenantAccessLifecycleService $access): RedirectResponse
     {
         $before = $subscription->only(['status', 'kind', 'plan_id', 'ends_at', 'renewal_at', 'auto_renew']);
         $data = $this->withDates($request->validated());
-        if (($data['status'] ?? null) === 'cancelled' && empty($data['cancelled_at'])) $data['cancelled_at'] = today()->toDateString();
-        if (($data['status'] ?? null) !== 'cancelled') $data['cancelled_at'] = null;
+        if (($data['status'] ?? null) === 'cancelled' && empty($data['cancelled_at'])) {
+            $data['cancelled_at'] = today()->toDateString();
+        }
+        if (($data['status'] ?? null) !== 'cancelled') {
+            $data['cancelled_at'] = null;
+        }
         $subscription->update($data);
         $after = $subscription->only(array_keys($before));
         if ($before['status'] !== $after['status']) {
@@ -89,10 +108,13 @@ class SubscriptionController extends Controller
         if ($before['plan_id'] !== $after['plan_id']) {
             $logger->log('subscription.plan_changed', $subscription, 'Subscription plan changed', ['old' => ['plan_id' => $before['plan_id']], 'new' => ['plan_id' => $after['plan_id']]]);
         }
-        return redirect()->route('subscriptions.show', $subscription)->with('success', 'Subscription updated.');
+        $synced = $this->syncAccess($access, $subscription, $request->user());
+        $response = redirect()->route('subscriptions.show', $subscription)->with('success', 'Subscription updated.');
+
+        return $synced ? $response : $response->with('error', 'Subscription updated, but CounterPOS access could not be synchronized. The scheduled lifecycle sync will retry.');
     }
 
-    public function renew(Request $request, Subscription $subscription, ActivityLogger $logger): RedirectResponse
+    public function renew(Request $request, Subscription $subscription, ActivityLogger $logger, TenantAccessLifecycleService $access): RedirectResponse
     {
         Gate::authorize('update', $subscription);
         $plan = $subscription->plan()->first(['id', 'duration_days', 'billing_cycle', 'price', 'currency']);
@@ -120,21 +142,61 @@ class SubscriptionController extends Controller
             ]);
         });
         $logger->log('subscription.renewed', $subscription, 'Subscription renewed', ['previous_status' => $previousStatus, 'previous_ends_at' => $previousEndsAt, 'ends_at' => $endsAt?->toDateString(), 'payment_id' => $payment?->id]);
-        return back()->with('success', 'Subscription renewed.');
+        $synced = $this->syncAccess($access, $subscription, $request->user());
+        $response = back()->with('success', 'Subscription renewed.');
+
+        return $synced ? $response : $response->with('error', 'Subscription renewed, but CounterPOS access could not be restored. The scheduled lifecycle sync will retry.');
     }
 
-    public function destroy(Subscription $subscription): RedirectResponse
+    public function destroy(Request $request, Subscription $subscription, TenantAccessLifecycleService $access): RedirectResponse
     {
         Gate::authorize('delete', $subscription);
+        $instance = $subscription->applicationInstance;
         $subscription->delete();
-        return redirect()->route('subscriptions.index')->with('success', 'Subscription archived.');
+        $synced = $this->syncArchivedSubscription($access, $instance, $request->user());
+        $response = redirect()->route('subscriptions.index')->with('success', 'Subscription archived.');
+
+        return $synced ? $response : $response->with('error', 'Subscription archived, but CounterPOS access could not be suspended. The scheduled lifecycle sync will retry.');
     }
 
-    public function restore(Subscription $subscription): RedirectResponse
+    public function restore(Request $request, Subscription $subscription, TenantAccessLifecycleService $access): RedirectResponse
     {
         Gate::authorize('restore', $subscription);
         $subscription->restore();
-        return redirect()->route('subscriptions.show', $subscription)->with('success', 'Subscription restored.');
+        $synced = $this->syncAccess($access, $subscription, $request->user());
+        $response = redirect()->route('subscriptions.show', $subscription)->with('success', 'Subscription restored.');
+
+        return $synced ? $response : $response->with('error', 'Subscription restored, but CounterPOS access could not be synchronized. The scheduled lifecycle sync will retry.');
+    }
+
+    private function syncAccess(TenantAccessLifecycleService $access, Subscription $subscription, $requestedBy): bool
+    {
+        try {
+            $access->sync($subscription->applicationInstance, $requestedBy);
+
+            return true;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return false;
+        }
+    }
+
+    private function syncArchivedSubscription(TenantAccessLifecycleService $access, ?ApplicationInstance $instance, $requestedBy): bool
+    {
+        if ($instance === null) {
+            return true;
+        }
+
+        try {
+            $access->sync($instance, $requestedBy);
+
+            return true;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return false;
+        }
     }
 
     private function listing(Request $request, bool $archived): Response
@@ -151,6 +213,7 @@ class SubscriptionController extends Controller
         $query->when($request->filled('instance_id'), fn (Builder $q) => $q->where('application_instance_id', $request->integer('instance_id')));
         $subscriptions = $query->orderByRaw("CASE WHEN status IN ('trialing','active','past_due') AND renewal_at IS NULL THEN 1 WHEN status IN ('trialing','active','past_due') THEN 0 ELSE 2 END")->orderBy($sort, $direction)->paginate($perPage)->withQueryString();
         $stats = collect(Subscription::STATUSES)->mapWithKeys(fn (string $status) => [$status => Subscription::query()->where('status', $status)->count()]);
+
         return Inertia::render($archived ? 'subscriptions/archived' : 'subscriptions/index', [
             'subscriptions' => $subscriptions,
             'filters' => ['search' => $request->string('search')->toString(), 'status' => $request->string('status')->toString(), 'kind' => $request->string('kind')->toString(), 'instance_id' => $request->integer('instance_id') ?: null, 'sort' => $sort, 'direction' => $direction, 'per_page' => $perPage],
@@ -173,19 +236,25 @@ class SubscriptionController extends Controller
     {
         if (empty($data['ends_at']) && ! empty($data['plan_id'])) {
             $duration = Plan::query()->whereKey($data['plan_id'])->value('duration_days');
-            if ($duration) $data['ends_at'] = Carbon::parse($data['starts_at'])->addDays((int) $duration)->toDateString();
+            if ($duration) {
+                $data['ends_at'] = Carbon::parse($data['starts_at'])->addDays((int) $duration)->toDateString();
+            }
         }
-        if (empty($data['renewal_at']) && ! empty($data['ends_at']) && ($data['auto_renew'] ?? true)) $data['renewal_at'] = $data['ends_at'];
+        if (empty($data['renewal_at']) && ! empty($data['ends_at']) && ($data['auto_renew'] ?? true)) {
+            $data['renewal_at'] = $data['ends_at'];
+        }
         if (empty($data['grace_ends_at']) && ! empty($data['ends_at']) && ! empty($data['plan_id'])) {
             $grace = (int) Plan::query()->whereKey($data['plan_id'])->value('grace_days');
             $data['grace_ends_at'] = Carbon::parse($data['ends_at'])->addDays($grace)->toDateString();
         }
+
         return $data;
     }
 
     private function payload(Subscription $subscription): array
     {
         $remaining = $subscription->daysRemaining();
+
         return [...$subscription->toArray(), 'kind_label' => Str::headline($subscription->kind), 'status_label' => Str::headline($subscription->status), 'days_remaining' => $remaining, 'is_expired' => $subscription->isExpired(), 'application_instance' => $subscription->applicationInstance, 'plan' => $subscription->plan];
     }
 }

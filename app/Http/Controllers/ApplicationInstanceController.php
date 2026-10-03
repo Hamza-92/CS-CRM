@@ -6,34 +6,46 @@ use App\Http\Requests\StoreApplicationInstanceRequest;
 use App\Http\Requests\UpdateApplicationInstanceRequest;
 use App\Models\ApplicationInstance;
 use App\Models\Customer;
+use App\Models\FollowUp;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\CounterPos\TenantAccessLifecycleService;
 use App\Support\Audit\ActivityLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class ApplicationInstanceController extends Controller
 {
     private const SORTABLE = ['name', 'environment', 'status', 'deployed_at', 'created_at'];
 
-    public function index(Request $request): Response { return $this->listing($request, false); }
-    public function archived(Request $request): Response { return $this->listing($request, true); }
+    public function index(Request $request): Response
+    {
+        return $this->listing($request, false);
+    }
+
+    public function archived(Request $request): Response
+    {
+        return $this->listing($request, true);
+    }
 
     public function create(Request $request): Response
     {
         Gate::authorize('create', ApplicationInstance::class);
+
         return Inertia::render('application-instances/create', [...$this->options(), 'defaults' => ['customer_id' => $request->integer('customer_id') ?: null]]);
     }
 
     public function store(StoreApplicationInstanceRequest $request): RedirectResponse
     {
         $instance = ApplicationInstance::create($request->validated());
+
         return redirect()->route('instances.show', $instance)->with('success', "Instance {$instance->name} created.");
     }
 
@@ -52,7 +64,7 @@ class ApplicationInstanceController extends Controller
             'can' => [
                 'update' => $request->user()->can('update', $applicationInstance),
                 'archive' => $request->user()->can('delete', $applicationInstance),
-                'create_follow_up' => $request->user()->can('create', \App\Models\FollowUp::class),
+                'create_follow_up' => $request->user()->can('create', FollowUp::class),
             ],
         ]);
     }
@@ -60,36 +72,63 @@ class ApplicationInstanceController extends Controller
     public function edit(ApplicationInstance $applicationInstance): Response
     {
         Gate::authorize('update', $applicationInstance);
+
         return Inertia::render('application-instances/edit', [...$this->options(), 'instance' => $this->payload($applicationInstance)]);
     }
 
-    public function update(UpdateApplicationInstanceRequest $request, ApplicationInstance $applicationInstance, ActivityLogger $logger): RedirectResponse
+    public function update(UpdateApplicationInstanceRequest $request, ApplicationInstance $applicationInstance, ActivityLogger $logger, TenantAccessLifecycleService $access): RedirectResponse
     {
         $before = $applicationInstance->only(['status', 'environment', 'deployment_url', 'version']);
         $applicationInstance->update($request->validated());
         $after = $applicationInstance->only(array_keys($before));
+        $synced = true;
 
         if ($before['status'] !== $after['status']) {
             $logger->log('instance.status_changed', $applicationInstance, "Instance {$applicationInstance->name} status changed", ['old' => ['status' => $before['status']], 'new' => ['status' => $after['status']]]);
+            $synced = $this->syncAccess($access, $applicationInstance, $request->user());
         }
         if ($before['environment'] !== $after['environment']) {
             $logger->log('instance.environment_changed', $applicationInstance, "Instance {$applicationInstance->name} environment changed", ['old' => ['environment' => $before['environment']], 'new' => ['environment' => $after['environment']]]);
         }
-        return redirect()->route('instances.show', $applicationInstance)->with('success', "Instance {$applicationInstance->name} updated.");
+
+        $response = redirect()->route('instances.show', $applicationInstance)->with('success', "Instance {$applicationInstance->name} updated.");
+
+        return $synced ? $response : $response->with('error', 'Instance updated, but CounterPOS access could not be synchronized. The scheduled lifecycle sync will retry.');
     }
 
-    public function destroy(ApplicationInstance $applicationInstance): RedirectResponse
+    public function destroy(Request $request, ApplicationInstance $applicationInstance, TenantAccessLifecycleService $access): RedirectResponse
     {
         Gate::authorize('delete', $applicationInstance);
         $applicationInstance->delete();
-        return redirect()->route('instances.index')->with('success', "Instance {$applicationInstance->name} archived.");
+        $synced = $this->syncAccess($access, $applicationInstance, $request->user());
+
+        $response = redirect()->route('instances.index')->with('success', "Instance {$applicationInstance->name} archived.");
+
+        return $synced ? $response : $response->with('error', 'Instance archived, but the CounterPOS tenant could not be archived. The scheduled lifecycle sync will retry.');
     }
 
-    public function restore(ApplicationInstance $applicationInstance): RedirectResponse
+    public function restore(Request $request, ApplicationInstance $applicationInstance, TenantAccessLifecycleService $access): RedirectResponse
     {
         Gate::authorize('restore', $applicationInstance);
         $applicationInstance->restore();
-        return redirect()->route('instances.show', $applicationInstance)->with('success', "Instance {$applicationInstance->name} restored.");
+        $synced = $this->syncAccess($access, $applicationInstance, $request->user());
+
+        $response = redirect()->route('instances.show', $applicationInstance)->with('success', "Instance {$applicationInstance->name} restored.");
+
+        return $synced ? $response : $response->with('error', 'Instance restored, but CounterPOS access could not be synchronized. The scheduled lifecycle sync will retry.');
+    }
+
+    private function syncAccess(TenantAccessLifecycleService $access, ApplicationInstance $instance, ?User $requestedBy): bool
+    {
+        try {
+            $access->sync($instance, $requestedBy);
+
+            return true;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return false;
+        }
     }
 
     private function listing(Request $request, bool $archived): Response
@@ -114,9 +153,21 @@ class ApplicationInstanceController extends Controller
         ]);
     }
 
-    private function options(): array { return ['customers' => $this->customers(), 'products' => $this->products(), 'owners' => User::query()->active()->orderBy('name')->get(['id', 'name', 'email', 'avatar_path'])]; }
-    private function customers(): Collection { return Customer::query()->orderBy('name')->get(['id', 'name', 'business', 'email']); }
-    private function products(): Collection { return Product::query()->active()->orderBy('name')->get(['id', 'name', 'code', 'brand_color']); }
+    private function options(): array
+    {
+        return ['customers' => $this->customers(), 'products' => $this->products(), 'owners' => User::query()->active()->orderBy('name')->get(['id', 'name', 'email', 'avatar_path'])];
+    }
+
+    private function customers(): Collection
+    {
+        return Customer::query()->orderBy('name')->get(['id', 'name', 'business', 'email']);
+    }
+
+    private function products(): Collection
+    {
+        return Product::query()->active()->orderBy('name')->get(['id', 'name', 'code', 'brand_color']);
+    }
+
     private function payload(ApplicationInstance $instance): array
     {
         return [...$instance->toArray(), 'environment_label' => Str::headline($instance->environment), 'status_label' => Str::headline($instance->status), 'customer' => $instance->customer, 'product' => $instance->product, 'owner' => $instance->owner ? [...$instance->owner->toArray(), 'avatar_url' => $instance->owner->avatar_url] : null, 'follow_ups_count' => $instance->follow_ups_count ?? $instance->followUps()->count()];

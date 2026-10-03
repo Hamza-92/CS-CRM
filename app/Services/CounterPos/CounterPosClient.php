@@ -16,6 +16,32 @@ final class CounterPosClient
     }
 
     /** @return array<string, mixed> */
+    public function tenants(int $page = 1, int $perPage = 25, string $search = ''): array
+    {
+        $query = http_build_query(array_filter([
+            'page' => $page,
+            'per_page' => $perPage,
+            'search' => $search,
+        ], static fn (mixed $value): bool => $value !== ''));
+
+        return $this->request('GET', '/tenants?'.$query);
+    }
+
+    /** @return array<string, mixed> */
+    public function tenant(string $tenantId): array
+    {
+        return $this->request('GET', '/tenants/'.$tenantId);
+    }
+
+    /** @return array<string, mixed> */
+    public function linkTenant(string $tenantId, int $applicationInstanceId, string $idempotencyKey): array
+    {
+        return $this->request('PUT', '/tenants/'.$tenantId.'/crm-link', [
+            'crm_application_instance_id' => $applicationInstanceId,
+        ], $idempotencyKey);
+    }
+
+    /** @return array<string, mixed> */
     public function tenantForCrmInstance(int $applicationInstanceId): array
     {
         if ($applicationInstanceId < 1) {

@@ -5,6 +5,7 @@ use App\Http\Controllers\ApplicationInstanceController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CustomerContactController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerTransferController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DataExportController;
 use App\Http\Controllers\DataImportController;
@@ -35,6 +36,10 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/dashboard')->name('home');
 
 Route::middleware('auth')->group(function () {
+    Route::get('customer-transfers', [CustomerTransferController::class, 'index'])->name('customer-transfers.index');
+    Route::get('customer-transfers/{tenantId}/create', [CustomerTransferController::class, 'create'])->name('customer-transfers.create');
+    Route::post('customer-transfers', [CustomerTransferController::class, 'store'])->name('customer-transfers.store');
+    Route::post('customer-transfers/{applicationInstance}/retry-link', [CustomerTransferController::class, 'retryLink'])->name('customer-transfers.retry-link');
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('my-work', MyWorkController::class)->name('my-work');
     Route::get('calendar', CalendarController::class)->name('calendar.index');

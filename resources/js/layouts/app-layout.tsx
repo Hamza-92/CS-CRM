@@ -77,6 +77,7 @@ const groups: NavGroup[] = [
         label: 'Customer Operations',
         items: [
             { label: 'Customers', href: '/customers', icon: ContactRound, ability: 'customers.view', match: (p) => p.startsWith('/customers') },
+            { label: 'Customer transfer', href: '/customer-transfers', icon: FileUp, ability: 'customers.view', match: (p) => p.startsWith('/customer-transfers') },
             { label: 'Instances', href: '/instances', icon: Boxes, ability: 'instances.view', match: (p) => p.startsWith('/instances') },
             { label: 'Follow-ups', href: '/follow-ups', icon: CalendarClock, ability: 'follow_ups.view', match: (p) => p.startsWith('/follow-ups') },
             { label: 'Support Tickets', href: '/support-tickets', icon: LifeBuoy, ability: 'support_tickets.view', match: (p) => p.startsWith('/support-tickets') },
